@@ -54,9 +54,20 @@
     th {
       background: #f5f5f5;
     }
+.page {
+  padding: 40px 20px;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
   </style>
 </head>
 <body>
+<div class="page">
+  <div class="container">
+    <!-- all your lock tracker content -->
 
 <h1>Lock Tracker</h1>
 
@@ -70,6 +81,11 @@
     <div>Timer</div>
     <div id="timer" class="big">--:--:--</div>
   </div>
+</div>
+
+<h2>Currently Wearing</h2>
+<div class="card wearing-card">
+  <div id="currentPanty">Not set</div>
 </div>
 
 <h2>This Week</h2>
@@ -258,8 +274,23 @@ async function loadMonthlySummary() {
     });
 }
 
+const wearingKey = 'currentPanty';
+
+function loadPanty() {
+  const saved = localStorage.getItem(wearingKey);
+  if (saved) {
+    document.getElementById('currentPanty').textContent = saved;
+  }
+}
+
+function setPanty(name) {
+  localStorage.setItem(wearingKey, name);
+  document.getElementById('currentPanty').textContent = name;
+}
+
 async function init() {
   await loadStatus();
+loadPanty();
   await loadWeekStats();
   await loadMonthStats();
   await loadTop10();
@@ -268,6 +299,7 @@ async function init() {
 
 init();
 </script>
-
+  </div>
+</div>
 </body>
 </html>
