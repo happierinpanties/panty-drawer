@@ -4,71 +4,52 @@
   <title>Lock Tracker</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 1100px;
-      margin: 40px auto;
-    }
-
-    h1 {
-      margin-bottom: 30px;
-    }
-
-    h2 {
-      margin-top: 40px;
-    }
-
-    .card {
-      border: 1px solid #ddd;
-      padding: 20px;
-      border-radius: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .big {
-      font-size: 28px;
-      font-weight: bold;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 20px;
-      margin-top: 20px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
-    }
-
-    th {
-      background: #f5f5f5;
-    }
-.page {
-  padding: 40px 20px;
+body { 
+  font-family: Arial; 
+  padding: 20px; 
 }
 
-.container {
-  max-width: 1100px;
-  margin: 0 auto;
+h2 { 
+  margin-top: 40px; 
+}
+
+.card {
+  border: 1px solid #ddd;
+  padding: 15px;
+  margin-top: 10px;
+}
+
+.big {
+  font-size: 22px;
+  font-weight: bold;
+  margin-top: 5px;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: center;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 10px;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+th { 
+  background-color: #f5f5f5; 
 }
   </style>
 </head>
 <body>
-<div class="page">
-  <div class="container">
-    <!-- all your lock tracker content -->
-
 <h1>Lock Tracker</h1>
 
 <h2>Status</h2>
@@ -81,6 +62,25 @@
     <div>Timer</div>
     <div id="timer" class="big">--:--:--</div>
   </div>
+</div>
+
+<h2>Status</h2>
+<div class="card status-grid">
+  <div>
+    <div>Are you locked?</div>
+    <div id="lockStatus" class="big">Checking...</div>
+  </div>
+
+  <div>
+    <div>Currently Wearing</div>
+    <div id="currentPanty"></div>
+  </div>
+
+  <div>
+    <div>Timer</div>
+    <div id="timer" class="big">--:--:--</div>
+  </div>
+
 </div>
 
 <h2>Currently Wearing</h2>
@@ -276,21 +276,42 @@ async function loadMonthlySummary() {
 
 const wearingKey = 'currentPanty';
 
-function loadPanty() {
-  const saved = localStorage.getItem(wearingKey);
-  if (saved) {
-    document.getElementById('currentPanty').textContent = saved;
-  }
-}
+async function loadCurrentPanty() {
+  const { data, error } = await client
+    .from('wear_history')
+    .select(`
+      worn_at,
+      created_at,
+      panties (
+        id,
+        image_url,
+        name
+      )
+    `)
+    .order('worn_at', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(1);
 
-function setPanty(name) {
-  localStorage.setItem(wearingKey, name);
-  document.getElementById('currentPanty').textContent = name;
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  if (data && data.length > 0) {
+    const panty = data[0].panties;
+
+    document.getElementById('currentPanty').innerHTML = `
+      <img src="${panty.image_url}" style="max-width:150px; border-radius:8px;" />
+      <div style="margin-top:8px;">${panty.name}</div>
+    `;
+  } else {
+    document.getElementById('currentPanty').textContent = 'None found';
+  }
 }
 
 async function init() {
   await loadStatus();
-loadPanty();
+loadCurrentPanty();
   await loadWeekStats();
   await loadMonthStats();
   await loadTop10();
@@ -299,7 +320,5 @@ loadPanty();
 
 init();
 </script>
-  </div>
-</div>
 </body>
 </html>
