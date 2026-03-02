@@ -124,7 +124,7 @@ function formatClock(seconds) {
 }
 
 async function loadStatus() {
-  const { data } = await supabase
+  const { data } = await client
     .from('focus_sessions')
     .select('*')
     .is('end_time', null)
