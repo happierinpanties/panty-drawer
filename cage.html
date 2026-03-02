@@ -16,7 +16,6 @@ h2 {
 .card {
   border: 1px solid #ddd;
   padding: 15px;
-  margin-top: 10px;
 }
 
 .big {
@@ -29,7 +28,7 @@ h2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
-  align-items: center;
+  margin-top: 10px;
 }
 
 table {
@@ -75,9 +74,10 @@ th {
 }
 
 #currentPanty img {
-  max-width: 120px;
+  max-height: 160px;   /* 👈 keeps it visible but not dominant */
+  width: auto;
   border-radius: 8px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
   </style>
 </head>
@@ -86,7 +86,7 @@ th {
 
 <h2>Status</h2>
 
-<div class="status-row">
+<div class="status-grid">
 
   <div class="card center">
     <div class="label">Are you locked?</div>
@@ -98,11 +98,11 @@ th {
     <div id="timer" class="big"></div>
   </div>
 
-  <div class="card center">
-    <div class="label">Currently Wearing</div>
-    <div id="currentPanty"></div>
-  </div>
+</div>
 
+<div class="card center" style="margin-top:20px;">
+  <div class="label">Currently Wearing</div>
+  <div id="currentPanty"></div>
 </div>
 
 <h2>This Week</h2>
