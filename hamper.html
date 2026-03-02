@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Hamper</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    .filters { margin-bottom: 20px; display: flex; gap: 10px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+    img { width: 100%; border-radius: 8px; }
+.item {
+  text-align: center;
+}
+
+.item-name {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+}
+  </style>
+</head>
+<body>
+
+<h1>Dirty Panty Hamper</h1>
+
+<div class="filters">
+<select id="color"></select>
+<select id="style"></select>
+<select id="brand"></select>
+<select id="fabric"></select>
+
+<select id="sort">
+  <option value="wear_desc">Worn count (high → low)</option>
+  <option value="wear_asc">Worn count (low → high)</option>
+  <option value="alpha_asc">Alphabetical (A → Z)</option>
+  <option value="alpha_desc">Alphabetical (Z → A)</option>
+</select>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+const client = window.supabase.createClient(
+  'https://rkocfrsaeeyxgfdxeiqz.supabase.co',
+  'sb_publishable_yp7myP1S5wmYLQrgwNWxhg_IfZHdeZj'
+);
+
+async function loadFilters() {
+  // Load brands
+  const { data: brands } = await client.from('brands').select('id, name').order('name');
+  const { data: styles } = await client.from('styles').select('id, name').order('name');
+  const { data: fabrics } = await client.from('fabrics').select('id, name').order('name');
+
+  const { data: colors } = await client
+    .from('panties')
+    .select('color')
+    .order('color');
+
+  populateSelect('brand', brands, 'name');
+  populateSelect('style', styles, 'name');
+  populateSelect('fabric', fabrics, 'name');
+  populateColorSelect(colors);
+}
+
+function populateSelect(id, options, labelField) {
+  const select = document.getElementById(id);
+  select.innerHTML = `<option value="">All ${id}</option>`;
+
+  options.forEach(opt => {
+    select.innerHTML += `<option value="${opt.id}">${opt[labelField]}</option>`;
+  });
+
+  select.addEventListener('change', loadPanties);
+}
+
+function populateColorSelect(colors) {
+  const select = document.getElementById('color');
+  const uniqueColors = [...new Set(colors.map(c => c.color))];
+
+  select.innerHTML = `<option value="">All colors</option>`;
+  uniqueColors.forEach(color => {
+    select.innerHTML += `<option value="${color}">${color}</option>`;
+  });
+
+  select.addEventListener('change', loadPanties);
+}
+
+async function loadPanties() {
+  let query = client
+.from('panties')
+.select(`
+  id,
+  name,
+  color,
+  image_url,
+  brands ( id, name ),
+  styles ( id, name ),
+  fabrics ( id, name )
+`)
+    .eq('status', 'Dirty');
+
+  const brand = document.getElementById('brand').value;
+  const style = document.getElementById('style').value;
+  const fabric = document.getElementById('fabric').value;
+  const color = document.getElementById('color').value;
+
+  if (brand) query = query.eq('brand_id', brand);
+  if (style) query = query.eq('style_id', style);
+  if (fabric) query = query.eq('fabric_id', fabric);
+  if (color) query = query.eq('color', color);
+
+  const { data } = await query;
+
+// Fetch wear counts separately
+const { data: wearCounts } = await client
+  .from('panty_wear_counts')
+  .select('id, wears');
+
+// Create a lookup map
+const wearMap = {};
+wearCounts.forEach(w => {
+  wearMap[w.id] = w.wears;
+});
+
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+
+if (!data || data.length === 0) {
+  grid.innerHTML = '<p>No items found.</p>';
+  return;
+}
+
+// Apply sorting
+const sortValue = document.getElementById('sort').value;
+
+data.sort((a, b) => {
+  const wearA = wearMap[a.id] || 0;
+  const wearB = wearMap[b.id] || 0;
+
+  if (sortValue === 'wear_desc') return wearB - wearA;
+  if (sortValue === 'wear_asc') return wearA - wearB;
+  if (sortValue === 'alpha_asc') return a.name.localeCompare(b.name);
+  if (sortValue === 'alpha_desc') return b.name.localeCompare(a.name);
+
+  return 0;
+});
+
+data.forEach(p => {
+  const wears = wearMap[p.id] || 0;
+
+  grid.innerHTML += `
+    <div class="item">
+      <img src="${p.image_url}" alt="${p.name}">
+      <div class="item-name">
+        ${p.name}
+        <div style="font-size:12px; color:#999; margin-top:4px;">
+          Worn ${wears} times
+        </div>
+      </div>
+    </div>
+  `;
+});
+}
+
+document.getElementById('sort').addEventListener('change', loadPanties);
+
+loadFilters();
+loadPanties();
+</script>
+
+</body>
+</html>
