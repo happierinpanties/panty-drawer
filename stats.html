@@ -94,30 +94,12 @@
 <h1>Mood & Wear Stats</h1>
 <div class="chart-card">
 <h2>Color by Day Rating</h2>
-<table id="colorTable">
-  <thead>
-    <tr>
-      <th>Day Rating</th>
-      <th>Color</th>
-      <th>Count</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+<canvas id="colorRatingChart"></canvas>
 </div>
 
 <div class="chart-card">
 <h2>State by Day Rating</h2>
-<table id="stateTable">
-  <thead>
-    <tr>
-      <th>Day Rating</th>
-      <th>State</th>
-      <th>Count</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+<canvas id="stateRatingChart"></canvas>
 </div>
 
 <h1>Wear Counts</h1>
@@ -208,6 +190,53 @@ const client = window.supabase.createClient(
 /* ---------------------------
    Helper Render Functions
 --------------------------- */
+
+function renderGroupedChart(canvasId, counts) {
+
+  const ratings = [1,2,3,4,5];
+  const categories = new Set();
+
+  Object.keys(counts).forEach(key=>{
+    const [rating, cat] = key.split("-");
+    categories.add(cat);
+  });
+
+  const catArray = Array.from(categories);
+
+  const datasets = catArray.map(cat => {
+
+    return {
+      label: cat,
+      data: ratings.map(r => counts[r+"-"+cat] || 0)
+    };
+
+  });
+
+  const ctx = document
+    .getElementById(canvasId)
+    .getContext('2d');
+
+  new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels: ratings,
+      datasets: datasets
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{ position:'top' }
+      },
+      scales:{
+        y:{
+          beginAtZero:true,
+          ticks:{ precision:0 }
+        }
+      }
+    }
+  });
+
+}
 
 function renderSimpleTable(tableId, counts) {
   const tbody = document.querySelector(`#${tableId} tbody`);
@@ -496,22 +525,7 @@ async function loadColorStats() {
     counts[key] = (counts[key] || 0) + 1;
   });
 
-  const tbody = document.querySelector('#colorTable tbody');
-  tbody.innerHTML = '';
-
-  Object.entries(counts)
-    .sort((a,b) => b[0].localeCompare(a[0]))
-    .forEach(([key, count]) => {
-      const [rating, color] = key.split("-");
-      tbody.innerHTML += `
-        <tr>
-          <td>${rating}</td>
-          <td>${color}</td>
-          <td>${count}</td>
-        </tr>
-      `;
-    });
-}
+renderGroupedChart("colorRatingChart", counts);}
 
 /* ---------------------------
    Mood: State by Day Rating
@@ -535,21 +549,7 @@ async function loadStateStats() {
     counts[key] = (counts[key] || 0) + 1;
   });
 
-  const tbody = document.querySelector('#stateTable tbody');
-  tbody.innerHTML = '';
-
-  Object.entries(counts)
-    .sort((a,b) => b[0].localeCompare(a[0]))
-    .forEach(([key, count]) => {
-      const [rating, state] = key.split("-");
-      tbody.innerHTML += `
-        <tr>
-          <td>${rating}</td>
-          <td>${state}</td>
-          <td>${count}</td>
-        </tr>
-      `;
-    });
+ renderGroupedChart("stateRatingChart", counts);
 }
 
 
@@ -740,9 +740,10 @@ renderStyleMonthChart(styleMonthCounts);
 async function loadKPIs() {
 
   /* TOTAL PANTIES */
-  const { count: totalPanties } = await client
-    .from('panties')
-    .select('*', { count: 'exact', head: true });
+const { count: totalPanties } = await client
+  .from('panties')
+  .select('*', { count: 'exact', head: true })
+  .neq('status', 'Retired');
 
   document.getElementById('totalPanties').textContent = totalPanties ?? 0;
 
