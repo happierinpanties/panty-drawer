@@ -193,6 +193,21 @@ const client = window.supabase.createClient(
 
 function renderGroupedChart(canvasId, counts) {
 
+const colorMap = {
+  Pink: "#ff6fae",
+  Purple: "#8e44ad",
+  Red: "#e74c3c",
+  White: "#ecf0f1",
+  Black: "#2c3e50",
+  Yellow: "#f1c40f",
+  Orange: "#e67e22",
+  Green: "#27ae60",
+  Blue: "#3498db",
+  Grey: "#7f8c8d",
+  "Animal Print": "#a67c52",
+  Multicolor: "#9b59b6"
+};
+
   const ratings = [1,2,3,4,5];
   const categories = new Set();
 
@@ -203,14 +218,22 @@ function renderGroupedChart(canvasId, counts) {
 
   const catArray = Array.from(categories);
 
-  const datasets = catArray.map(cat => {
+const datasets = catArray.map(cat => {
 
-    return {
-      label: cat,
-      data: ratings.map(r => counts[r+"-"+cat] || 0)
-    };
+  const isColorChart = canvasId === "colorRatingChart";
+  const color = isColorChart
+    ? (colorMap[cat] || "#95a5a6")
+    : undefined;
 
-  });
+  return {
+    label: cat,
+    data: ratings.map(r => counts[r+"-"+cat] || 0),
+    backgroundColor: color,
+    borderColor: color,
+    borderWidth: 1
+  };
+
+});
 
   const ctx = document
     .getElementById(canvasId)
