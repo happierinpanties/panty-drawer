@@ -5,14 +5,19 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
+canvas {
+  max-height: 300px;
+}
 .section {
   margin-top: 40px;
 }
 
 .section-title {
   font-size: 20px;
-  font-weight: bold;
+  font-weight: 600;
   margin-bottom: 15px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 5px;
 }
 
 .section-grid {
@@ -27,7 +32,7 @@
   font-size: 16px;
 }
 
-    body { font-family: Arial; padding: 20px; }
+    body { font-family: Arial; padding: 20px; background: #f7f8fb; }
     h2 { margin-top: 40px; }
     table {
       border-collapse: collapse;
@@ -121,7 +126,7 @@
 <div class="section">
   <div class="section-title">Mood & Wear Stats</div>
 
-  <div class="section-grid">
+  <div style="display:flex; flex-direction:column; gap:25px;">
     <div class="chart-card">
       <h3>Color by Day Rating</h3>
       <canvas id="colorRatingChart"></canvas>
@@ -135,10 +140,14 @@
 </div>
 
 <!-- WEAR COUNTS -->
-<div class="section">
+<div style="
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:25px;
+">
   <div class="section-title">Wear Counts</div>
 
-  <div class="section-grid">
+  <div style="display:flex; flex-direction:column; gap:25px;">
     <div class="chart-card">
       <h3>By Color</h3>
       <table id="colorCountTable"><thead><tr><th>Color</th><th>Count</th></tr></thead><tbody></tbody></table>
