@@ -5,6 +5,28 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
+.section {
+  margin-top: 40px;
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.section-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 25px;
+}
+
+.chart-card h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
     body { font-family: Arial; padding: 20px; }
     h2 { margin-top: 40px; }
     table {
@@ -69,117 +91,119 @@
 </head>
 <body>
 <h1>Panty Drawer Stats</h1>
-<div class="kpi-grid">
-  <div class="kpi-card">
-    <div class="kpi-value" id="totalPanties">--</div>
-    <div class="kpi-label">Panties in Drawer</div>
+
+<!-- KPI SECTION -->
+<div class="section">
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-value" id="totalPanties">--</div>
+      <div class="kpi-label">Panties in Drawer</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-value" id="totalWears">--</div>
+      <div class="kpi-label">Total Wears Logged</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-value" id="topColor">--</div>
+      <div class="kpi-label">Top Color</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-value" id="topStyle">--</div>
+      <div class="kpi-label">Top Style</div>
+    </div>
   </div>
+</div>
 
-  <div class="kpi-card">
-    <div class="kpi-value" id="totalWears">--</div>
-    <div class="kpi-label">Total Wears Logged</div>
+<!-- MOOD SECTION -->
+<div class="section">
+  <div class="section-title">Mood & Wear Stats</div>
+
+  <div class="section-grid">
+    <div class="chart-card">
+      <h3>Color by Day Rating</h3>
+      <canvas id="colorRatingChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <h3>State by Day Rating</h3>
+      <canvas id="stateRatingChart"></canvas>
+    </div>
   </div>
+</div>
 
-  <div class="kpi-card">
-    <div class="kpi-value" id="topColor">--</div>
-    <div class="kpi-label">Top Color</div>
+<!-- WEAR COUNTS -->
+<div class="section">
+  <div class="section-title">Wear Counts</div>
+
+  <div class="section-grid">
+    <div class="chart-card">
+      <h3>By Color</h3>
+      <table id="colorCountTable"><thead><tr><th>Color</th><th>Count</th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <div class="chart-card">
+      <h3>By Style</h3>
+      <table id="styleCountTable"><thead><tr><th>Style</th><th>Count</th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <div class="chart-card">
+      <h3>By Brand</h3>
+      <table id="brandCountTable"><thead><tr><th>Brand</th><th>Count</th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <div class="chart-card">
+      <h3>By Fabric</h3>
+      <table id="fabricCountTable"><thead><tr><th>Fabric</th><th>Count</th></tr></thead><tbody></tbody></table>
+    </div>
   </div>
+</div>
 
-  <div class="kpi-card">
-    <div class="kpi-value" id="topStyle">--</div>
-    <div class="kpi-label">Top Style</div>
+<!-- TIME TRENDS -->
+<div class="section">
+  <div class="section-title">Trends Over Time</div>
+
+  <div class="section-grid">
+    <div class="chart-card">
+      <h3>Color by Month</h3>
+      <canvas id="colorMonthChart" height="120"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <h3>Style by Month</h3>
+      <canvas id="styleMonthChart" height="120"></canvas>
+    </div>
   </div>
 </div>
 
-<h1>Mood & Wear Stats</h1>
-<div class="chart-card">
-<h2>Color by Day Rating</h2>
-<canvas id="colorRatingChart"></canvas>
-</div>
+<!-- DRAWER -->
+<div class="section">
+  <div class="section-title">Current Drawer</div>
 
-<div class="chart-card">
-<h2>State by Day Rating</h2>
-<canvas id="stateRatingChart"></canvas>
-</div>
+  <div class="section-grid">
+    <div class="chart-card">
+      <h3>By Color</h3>
+      <canvas id="drawerColorChart" height="120"></canvas>
+    </div>
 
-<h1>Wear Counts</h1>
+    <div class="chart-card">
+      <h3>By Style</h3>
+      <canvas id="drawerStyleChart" height="120"></canvas>
+    </div>
 
-<div class="grid-2x2">
+    <div class="chart-card">
+      <h3>By Brand</h3>
+      <canvas id="drawerBrandChart" height="120"></canvas>
+    </div>
 
-  <div>
-    <h2>Wear Counts by Color</h2>
-    <table id="colorCountTable">
-      <thead>
-        <tr><th>Color</th><th>Count</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="chart-card">
+      <h3>By Fabric</h3>
+      <canvas id="drawerFabricChart" height="120"></canvas>
+    </div>
   </div>
-
-  <div>
-    <h2>Wear Counts by Style</h2>
-    <table id="styleCountTable">
-      <thead>
-        <tr><th>Style</th><th>Count</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <div>
-    <h2>Wear Counts by Brand</h2>
-    <table id="brandCountTable">
-      <thead>
-        <tr><th>Brand</th><th>Count</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <div>
-    <h2>Wear Counts by Fabric</h2>
-    <table id="fabricCountTable">
-      <thead>
-        <tr><th>Fabric</th><th>Count</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
 </div>
-
-<div class="chart-card">
-<h2>Color by Year-Month</h2>
-<canvas id="colorMonthChart" height="120"></canvas>
-</div>
-
-<div class="chart-card">
-<h2>Style by Year-Month</h2>
-<canvas id="styleMonthChart" height="120"></canvas>
-</div>
-
-<h1>Current Drawer Counts</h1>
-
-<div class="chart-card">
-<h2>Current Drawer Counts by Color</h2>
-<canvas id="drawerColorChart" height="120"></canvas>
-</div>
-
-<div class="chart-card">
-<h2>Current Drawer Counts by Style</h2>
-<canvas id="drawerStyleChart" height="120"></canvas>
-</div>
-
-<div class="chart-card">
-<h2>Current Drawer Counts by Brand</h2>
-<canvas id="drawerBrandChart" height="120"></canvas>
-</div>
-
-<div class="chart-card">
-<h2>Current Drawer Counts by Fabric</h2>
-<canvas id="drawerFabricChart" height="120"></canvas>
-</div>
-
 <script>
 const client = window.supabase.createClient(
   'https://rkocfrsaeeyxgfdxeiqz.supabase.co',
