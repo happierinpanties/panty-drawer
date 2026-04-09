@@ -63,16 +63,21 @@ canvas {
 }
 
 .kpi-card{
-  background:#f8f9fb;
+  background:#ffffff;   /* ← change this */
   border:1px solid #e5e7eb;
   border-radius:10px;
   padding:18px;
   text-align:center;
+  transition: all 0.2s ease;
 }
-
+.kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+}
 .kpi-value{
-  font-size:28px;
+  font-size:30px;
   font-weight:bold;
+  color:#2c3e50;
 }
 
 .kpi-label{
@@ -91,6 +96,13 @@ canvas {
   grid-template-columns:repeat(auto-fit,minmax(400px,1fr));
   gap:30px;
   margin-top:20px;
+}
+h1 {
+  margin-bottom: 10px;
+}
+
+.section:first-of-type {
+  margin-top: 10px;
 }
   </style>
 </head>
@@ -197,33 +209,36 @@ canvas {
   </div>
 </div>
 
-<!-- DRAWER -->
+<!-- CURRENT DRAWER -->
 <div class="section">
   <div class="section-title">Current Drawer</div>
 
-  <div class="section-grid">
+  <div style="
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:25px;
+  ">
     <div class="chart-card">
       <h3>By Color</h3>
-      <canvas id="drawerColorChart" height="120"></canvas>
+      <canvas id="drawerColorChart" height="140"></canvas>
     </div>
 
     <div class="chart-card">
       <h3>By Style</h3>
-      <canvas id="drawerStyleChart" height="120"></canvas>
+      <canvas id="drawerStyleChart" height="140"></canvas>
     </div>
 
     <div class="chart-card">
       <h3>By Brand</h3>
-      <canvas id="drawerBrandChart" height="120"></canvas>
+      <canvas id="drawerBrandChart" height="140"></canvas>
     </div>
 
     <div class="chart-card">
       <h3>By Fabric</h3>
-      <canvas id="drawerFabricChart" height="120"></canvas>
+      <canvas id="drawerFabricChart" height="140"></canvas>
     </div>
   </div>
-</div>
-<script>
+</div><script>
 const client = window.supabase.createClient(
   'https://rkocfrsaeeyxgfdxeiqz.supabase.co',
   'sb_publishable_yp7myP1S5wmYLQrgwNWxhg_IfZHdeZj'
