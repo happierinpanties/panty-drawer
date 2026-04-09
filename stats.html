@@ -190,6 +190,16 @@ const client = window.supabase.createClient(
 /* ---------------------------
    Helper Render Functions
 --------------------------- */
+function stringToColor(str) {
+  let hash = 0;
+
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  const h = Math.abs(hash) % 360; // hue
+  return `hsl(${h}, 65%, 55%)`;
+}
 
 function renderGroupedChart(canvasId, counts) {
 
@@ -558,16 +568,6 @@ async function loadColorStats() {
     counts[key] = (counts[key] || 0) + 1;
   });
 
-function stringToColor(str) {
-  let hash = 0;
-
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-
-  const h = Math.abs(hash) % 360; // hue
-  return `hsl(${h}, 65%, 55%)`;
-}
 
 renderGroupedChart("colorRatingChart", counts);}
 
