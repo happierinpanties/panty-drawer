@@ -216,14 +216,24 @@ const colorMap = {
     categories.add(cat);
   });
 
-  const catArray = Array.from(categories);
+const catArray = Array.from(categories).sort((a,b)=>{
+  const totalA = ratings.reduce((sum,r)=>sum+(counts[r+"-"+a]||0),0);
+  const totalB = ratings.reduce((sum,r)=>sum+(counts[r+"-"+b]||0),0);
+  return totalB - totalA;
+});
 
 const datasets = catArray.map(cat => {
 
-  const isColorChart = canvasId === "colorRatingChart";
-  const color = isColorChart
-    ? (colorMap[cat] || "#95a5a6")
-    : undefined;
+const isColorChart = canvasId === "colorRatingChart";
+const isStateChart = canvasId === "stateRatingChart";
+
+let color;
+
+if (isColorChart) {
+  color = colorMap[cat] || "#95a5a6";
+} else if (isStateChart) {
+  color = stringToColor(cat);
+}
 
   return {
     label: cat,
@@ -547,6 +557,17 @@ async function loadColorStats() {
     const key = rating + "-" + color;
     counts[key] = (counts[key] || 0) + 1;
   });
+
+function stringToColor(str) {
+  let hash = 0;
+
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  const h = Math.abs(hash) % 360; // hue
+  return `hsl(${h}, 65%, 55%)`;
+}
 
 renderGroupedChart("colorRatingChart", counts);}
 
