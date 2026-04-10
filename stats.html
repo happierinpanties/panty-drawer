@@ -5,6 +5,56 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
+.top-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:20px;
+}
+
+.top-item{
+  background:#ffffff;
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  padding:10px;
+  text-align:center;
+  transition: all 0.2s ease;
+  position:relative;
+}
+
+.top-item:hover{
+  transform: translateY(-4px);
+  box-shadow:0 8px 20px rgba(0,0,0,0.08);
+}
+
+.top-item img{
+  width:100%;
+  border-radius:8px;
+}
+
+.top-name{
+  margin-top:8px;
+  font-size:13px;
+  font-weight:500;
+  color:#444;
+}
+
+.top-wears{
+  font-size:12px;
+  color:#888;
+  margin-top:4px;
+}
+
+.badge{
+  position:absolute;
+  top:8px;
+  left:8px;
+  background:#111;
+  color:#fff;
+  font-size:10px;
+  padding:4px 6px;
+  border-radius:6px;
+}
+
 canvas {
   max-height: 300px;
 }
@@ -134,6 +184,13 @@ h1 {
   </div>
 </div>
 
+<!-- TOP 10 PANTIES -->
+<div class="section">
+  <div class="section-title">Top 10 Most Worn</div>
+
+  <div id="topPantiesGrid" class="top-grid"></div>
+</div>
+
 <!-- MOOD SECTION -->
 <div class="section">
   <div class="section-title">Mood & Wear Stats</div>
@@ -250,6 +307,73 @@ const client = window.supabase.createClient(
 /* ---------------------------
    Helper Render Functions
 --------------------------- */
+async function loadTopPanties() {
+
+  // Get wear counts
+  const { data: wearCounts } = await client
+    .from('panty_wear_counts')
+    .select('id, wears');
+
+  if (!wearCounts) return;
+
+  // Get panties info (ALL statuses)
+  const { data: panties } = await client
+    .from('panties')
+    .select('id, name, image_url');
+
+  if (!panties) return;
+
+  // Get last worn date per panty
+  const { data: wearHistory } = await client
+    .from('wear_history')
+    .select('panty_id, worn_at')
+    .order('worn_at', { ascending: false });
+
+  const lastWornMap = {};
+  wearHistory.forEach(row => {
+    if (!lastWornMap[row.panty_id]) {
+      lastWornMap[row.panty_id] = row.worn_at;
+    }
+  });
+
+  // Merge data
+  const merged = panties.map(p => {
+    const wear = wearCounts.find(w => w.id === p.id);
+
+    return {
+      ...p,
+      wears: wear?.wears || 0,
+      lastWorn: lastWornMap[p.id] || null
+    };
+  });
+
+  // Sort
+  merged.sort((a, b) => {
+    if (b.wears !== a.wears) return b.wears - a.wears;
+
+    const dateA = a.lastWorn ? new Date(a.lastWorn) : 0;
+    const dateB = b.lastWorn ? new Date(b.lastWorn) : 0;
+
+    return dateB - dateA;
+  });
+
+  const top10 = merged.slice(0, 10);
+
+  const grid = document.getElementById('topPantiesGrid');
+  grid.innerHTML = '';
+
+  top10.forEach((p, index) => {
+    grid.innerHTML += `
+      <div class="top-item">
+        ${index === 0 ? '<div class="badge">Most Worn</div>' : ''}
+        <img src="${p.image_url}" alt="${p.name}">
+        <div class="top-name">${p.name}</div>
+        <div class="top-wears">Worn ${p.wears} times</div>
+      </div>
+    `;
+  });
+}
+
 function stringToColor(str) {
   let hash = 0;
 
@@ -904,6 +1028,7 @@ const { count: totalPanties } = await client
 /* ---------------------------
    Initialize
 --------------------------- */
+loadTopPanties();
 loadKPIs();
 loadColorStats();
 loadStateStats();
