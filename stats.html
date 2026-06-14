@@ -1,308 +1,515 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Panty Drawer - Stats</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panty Stats</title>
+  <!-- Supabase & Chart.js as ESM -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+
   <style>
-.top-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
-  gap:20px;
-}
+    /* ── Tokens ─────────────────────────────────────────────── */
+    :root {
+      --blush:   #f5e8e4;
+      --rose:    #c9847a;
+      --plum:    #6b3a45;
+      --ivory:   #fdf8f6;
+      --stone:   #8a7570;
+      --ink:     #2e1f22;
+      --border:  #e8d8d3;
+      --card-bg: #ffffff;
+      --nav-h:   64px;
+    }
 
-.top-item{
-  background:#ffffff;
-  border:1px solid #e5e7eb;
-  border-radius:12px;
-  padding:10px;
-  text-align:center;
-  transition: all 0.2s ease;
-  position:relative;
-}
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-.top-item:hover{
-  transform: translateY(-4px);
-  box-shadow:0 8px 20px rgba(0,0,0,0.08);
-}
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--ivory);
+      color: var(--ink);
+      font-weight: 300;
+    }
 
-.top-item img{
-  width:100%;
-  border-radius:8px;
-}
+    /* ── Nav ─────────────────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(253,248,246,0.96);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      height: var(--nav-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+    }
 
-.top-name{
-  margin-top:8px;
-  font-size:13px;
-  font-weight:500;
-  color:#444;
-}
+    .nav-wordmark {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      color: var(--plum);
+      text-decoration: none;
+    }
 
-.top-wears{
-  font-size:12px;
-  color:#888;
-  margin-top:4px;
-}
+    .nav-links {
+      display: flex;
+      gap: 0;
+      list-style: none;
+      position: relative;
+    }
 
-.badge{
-  position:absolute;
-  top:8px;
-  left:8px;
-  background:#111;
-  color:#fff;
-  font-size:10px;
-  padding:4px 6px;
-  border-radius:6px;
-}
+    .nav-links > li { position: relative; }
 
-canvas {
-  max-height: 300px;
-}
-.section {
-  margin-top: 40px;
-}
+    .nav-links > li > a,
+    .nav-links > li > button {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 16px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--stone);
+      text-decoration: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
 
-.section-title {
-  font-size: 20px;
-  font-weight: 600;
-  margin-bottom: 15px;
-  border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 5px;
-}
+    .nav-links > li > a:hover,
+    .nav-links > li > button:hover { color: var(--plum); }
 
-.section-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 25px;
-}
+    .nav-links > li > a.active {
+      color: var(--plum);
+      border-bottom: 2px solid var(--rose);
+    }
 
-.chart-card h3 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  font-size: 16px;
-}
+    .dropdown {
+      position: absolute;
+      top: calc(100% + 1px);
+      right: 0;
+      min-width: 180px;
+      background: var(--ivory);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--rose);
+      box-shadow: 0 8px 24px rgba(107,58,69,0.08);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-4px);
+      transition: opacity 0.18s, transform 0.18s;
+      list-style: none;
+    }
 
-    body { font-family: Arial; padding: 20px; background: #f7f8fb; }
-    h2 { margin-top: 40px; }
+    .nav-links > li:hover .dropdown,
+    .nav-links > li:focus-within .dropdown {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateY(0);
+    }
+
+    .dropdown li a {
+      display: block;
+      padding: 12px 20px;
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--stone);
+      text-decoration: none;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .dropdown li a:hover { background: var(--blush); color: var(--plum); }
+
+    .chevron { font-size: 9px; transition: transform 0.2s; }
+    .nav-links > li:hover .chevron { transform: rotate(180deg); }
+
+    /* ── Page Header ─────────────────────────────────────────── */
+    .page-header {
+      text-align: center;
+      padding: 56px 24px 40px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .page-header .eyebrow {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--rose);
+      margin-bottom: 14px;
+    }
+
+    .page-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(34px, 5vw, 52px);
+      font-weight: 400;
+      color: var(--plum);
+      line-height: 1.15;
+    }
+
+    .page-header h1 em { font-style: italic; }
+
+    /* ── Layout ──────────────────────────────────────────────── */
+    .content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 32px 80px;
+    }
+
+    /* ── Section headings ────────────────────────────────────── */
+    .section { margin-top: 56px; }
+    .section:first-child { margin-top: 0; }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--plum);
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+
+    /* ── KPI Cards ───────────────────────────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 20px;
+    }
+
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--rose);
+      padding: 24px 20px;
+      text-align: center;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(107,58,69,0.09);
+    }
+
+    .kpi-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 36px;
+      font-weight: 400;
+      color: var(--plum);
+      line-height: 1;
+    }
+
+    .kpi-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--stone);
+      margin-top: 8px;
+    }
+
+    /* ── Top 10 Grid ─────────────────────────────────────────── */
+    .top-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 20px;
+    }
+
+    .top-item {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      position: relative;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .top-item:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(107,58,69,0.12);
+    }
+
+    .top-item-img {
+      aspect-ratio: 3/4;
+      overflow: hidden;
+      background: var(--blush);
+    }
+
+    .top-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.4s ease;
+    }
+
+    .top-item:hover img { transform: scale(1.04); }
+
+    .top-item-info {
+      padding: 10px 12px 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .top-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 12px;
+      color: var(--ink);
+      line-height: 1.35;
+    }
+
+    .top-wears {
+      font-size: 11px;
+      color: var(--stone);
+      margin-top: 3px;
+      letter-spacing: 0.03em;
+    }
+
+    .badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: var(--plum);
+      color: #fff;
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 4px 8px;
+    }
+
+    /* ── Chart Cards ─────────────────────────────────────────── */
+    .chart-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 24px;
+    }
+
+    .chart-card h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--plum);
+      margin-bottom: 16px;
+    }
+
+    canvas { max-height: 300px; }
+
+    .chart-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .chart-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    /* ── Tables ──────────────────────────────────────────────── */
     table {
       border-collapse: collapse;
       width: 100%;
-      margin-top: 10px;
+      margin-top: 4px;
+      font-size: 13px;
     }
+
     th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
+      padding: 9px 12px;
       text-align: left;
+      border-bottom: 1px solid var(--border);
     }
-    th { background-color: #f5f5f5; }
-.grid-2x2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 40px;
-  margin-top: 20px;
-}
 
-.grid-2x2 > div {
-  width: 100%;
-}
-.kpi-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-  gap:20px;
-  margin:20px 0 30px 0;
-}
+    th {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--stone);
+      background: var(--blush);
+    }
 
-.kpi-card{
-  background:#ffffff;   /* ← change this */
-  border:1px solid #e5e7eb;
-  border-radius:10px;
-  padding:18px;
-  text-align:center;
-  transition: all 0.2s ease;
-}
-.kpi-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.06);
-}
-.kpi-value{
-  font-size:30px;
-  font-weight:bold;
-  color:#2c3e50;
-}
+    td { color: var(--ink); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--ivory); }
 
-.kpi-label{
-  font-size:12px;
-  color:#666;
-  margin-top:4px;
-}
-.chart-card{
-  background:#ffffff;
-  border:1px solid #e5e7eb;
-  border-radius:10px;
-  padding:20px;
-}
-.dashboard-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(400px,1fr));
-  gap:30px;
-  margin-top:20px;
-}
-h1 {
-  margin-bottom: 10px;
-}
+    /* ── Footer ──────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 32px;
+      text-align: center;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--stone);
+    }
 
-.section:first-of-type {
-  margin-top: 10px;
-}
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 700px) {
+      nav { padding: 0 16px; }
+      .content { padding: 24px 16px 60px; }
+      .chart-2col { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
-<h1>Panty Drawer Stats</h1>
 
-<!-- KPI SECTION -->
-<div class="section">
-  <div class="kpi-grid">
-    <div class="kpi-card">
-      <div class="kpi-value" id="totalPanties">--</div>
-      <div class="kpi-label">Panties in Drawer</div>
-    </div>
+<!-- Nav -->
+<nav>
+  <a class="nav-wordmark" href="https://www.panty-drawer.com">The Drawer</a>
+  <ul class="nav-links">
+    <li><a href="https://www.panty-drawer.com">Drawer</a></li>
+    <li>
+      <button aria-haspopup="true">Pages <span class="chevron">&#9662;</span></button>
+      <ul class="dropdown">
+        <li><a href="/stats" class="active">Panty Stats</a></li>
+        <li><a href="/hamper">Hamper</a></li>
+        <li><a href="/retired">Retired Panties</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
 
-    <div class="kpi-card">
-      <div class="kpi-value" id="totalWears">--</div>
-      <div class="kpi-label">Total Wears Logged</div>
-    </div>
+<!-- Page Header -->
+<header class="page-header">
+  <p class="eyebrow">By the Numbers</p>
+  <h1>Panty <em>Stats</em></h1>
+</header>
 
-    <div class="kpi-card">
-      <div class="kpi-value" id="topColor">--</div>
-      <div class="kpi-label">Top Color</div>
-    </div>
+<div class="content">
 
-    <div class="kpi-card">
-      <div class="kpi-value" id="topStyle">--</div>
-      <div class="kpi-label">Top Style</div>
-    </div>
-  </div>
-</div>
-
-<!-- TOP 10 PANTIES -->
-<div class="section">
-  <div class="section-title">Top 10 Most Worn</div>
-
-  <div id="topPantiesGrid" class="top-grid"></div>
-</div>
-
-<!-- MOOD SECTION -->
-<div class="section">
-  <div class="section-title">Mood & Wear Stats</div>
-
-  <div style="display:flex; flex-direction:column; gap:25px;">
-    <div class="chart-card">
-      <h3>Color by Day Rating</h3>
-      <canvas id="colorRatingChart"></canvas>
-    </div>
-
-    <div class="chart-card">
-      <h3>State by Day Rating</h3>
-      <canvas id="stateRatingChart"></canvas>
+  <!-- KPIs -->
+  <div class="section">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-value" id="totalPanties">--</div>
+        <div class="kpi-label">Panties in Drawer</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value" id="totalWears">--</div>
+        <div class="kpi-label">Total Wears Logged</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value" id="topColor">--</div>
+        <div class="kpi-label">Top Color</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value" id="topStyle">--</div>
+        <div class="kpi-label">Top Style</div>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- TIME TRENDS -->
-<div class="section">
-  <div class="section-title">Trends Over Time</div>
+  <!-- Top 10 -->
+  <div class="section">
+    <div class="section-title">Top 10 Most Worn</div>
+    <div id="topPantiesGrid" class="top-grid"></div>
+  </div>
 
-    <div style="display:flex; flex-direction:column; gap:25px;">
-    <div class="chart-card">
-      <h3>Color by Month</h3>
-      <canvas id="colorMonthChart" height="120"></canvas>
-    </div>
-
-    <div class="chart-card">
-      <h3>Style by Month</h3>
-      <canvas id="styleMonthChart" height="120"></canvas>
+  <!-- Mood -->
+  <div class="section">
+    <div class="section-title">Mood &amp; Wear Stats</div>
+    <div class="chart-stack">
+      <div class="chart-card">
+        <h3>Color by Day Rating</h3>
+        <canvas id="colorRatingChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>State by Day Rating</h3>
+        <canvas id="stateRatingChart"></canvas>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- WEAR COUNTS -->
-<div class="section">
-  <div class="section-title">Wear Counts</div>
-
-  <div style="
-    display:grid;
-    grid-template-columns: 1fr 1fr;
-    gap:25px;
-  ">
-    <div class="chart-card">
-      <h3>By Color</h3>
-      <table id="colorCountTable">
-        <thead><tr><th>Color</th><th>Count</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
-    <div class="chart-card">
-      <h3>By Style</h3>
-      <table id="styleCountTable">
-        <thead><tr><th>Style</th><th>Count</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
-    <div class="chart-card">
-      <h3>By Brand</h3>
-      <table id="brandCountTable">
-        <thead><tr><th>Brand</th><th>Count</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
-    <div class="chart-card">
-      <h3>By Fabric</h3>
-      <table id="fabricCountTable">
-        <thead><tr><th>Fabric</th><th>Count</th></tr></thead>
-        <tbody></tbody>
-      </table>
+  <!-- Trends -->
+  <div class="section">
+    <div class="section-title">Trends Over Time</div>
+    <div class="chart-stack">
+      <div class="chart-card">
+        <h3>Color by Month</h3>
+        <canvas id="colorMonthChart" height="120"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Style by Month</h3>
+        <canvas id="styleMonthChart" height="120"></canvas>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- CURRENT DRAWER -->
-<div class="section">
-  <div class="section-title">Current Drawer</div>
-
-  <div style="
-    display:grid;
-    grid-template-columns: 1fr 1fr;
-    gap:25px;
-  ">
-    <div class="chart-card">
-      <h3>By Color</h3>
-      <canvas id="drawerColorChart" height="140"></canvas>
-    </div>
-
-    <div class="chart-card">
-      <h3>By Style</h3>
-      <canvas id="drawerStyleChart" height="140"></canvas>
-    </div>
-
-    <div class="chart-card">
-      <h3>By Brand</h3>
-      <canvas id="drawerBrandChart" height="140"></canvas>
-    </div>
-
-    <div class="chart-card">
-      <h3>By Fabric</h3>
-      <canvas id="drawerFabricChart" height="140"></canvas>
+  <!-- Wear Counts -->
+  <div class="section">
+    <div class="section-title">Wear Counts</div>
+    <div class="chart-2col">
+      <div class="chart-card">
+        <h3>By Color</h3>
+        <table id="colorCountTable"><thead><tr><th>Color</th><th>Count</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="chart-card">
+        <h3>By Style</h3>
+        <table id="styleCountTable"><thead><tr><th>Style</th><th>Count</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="chart-card">
+        <h3>By Brand</h3>
+        <table id="brandCountTable"><thead><tr><th>Brand</th><th>Count</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="chart-card">
+        <h3>By Fabric</h3>
+        <table id="fabricCountTable"><thead><tr><th>Fabric</th><th>Count</th></tr></thead><tbody></tbody></table>
+      </div>
     </div>
   </div>
-</div><script>
-const client = window.supabase.createClient(
+
+  <!-- Drawer Breakdown -->
+  <div class="section">
+    <div class="section-title">Current Drawer</div>
+    <div class="chart-2col">
+      <div class="chart-card">
+        <h3>By Color</h3>
+        <canvas id="drawerColorChart" height="140"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>By Style</h3>
+        <canvas id="drawerStyleChart" height="140"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>By Brand</h3>
+        <canvas id="drawerBrandChart" height="140"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>By Fabric</h3>
+        <canvas id="drawerFabricChart" height="140"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  &copy; The Drawer &nbsp;&middot;&nbsp; Stats &amp; analysis
+</footer>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const client = createClient(
   'https://rkocfrsaeeyxgfdxeiqz.supabase.co',
   'sb_publishable_yp7myP1S5wmYLQrgwNWxhg_IfZHdeZj'
 );
 
+// ── Chart default overrides to match palette ──────────────────
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.color = "#8a7570";
 
 /* ---------------------------
    Helper Render Functions
@@ -365,10 +572,14 @@ async function loadTopPanties() {
   top10.forEach((p, index) => {
     grid.innerHTML += `
       <div class="top-item">
-        ${index === 0 ? '<div class="badge">Most Worn</div>' : ''}
-        <img src="${p.image_url}" alt="${p.name}">
-        <div class="top-name">${p.name}</div>
-        <div class="top-wears">Worn ${p.wears} times</div>
+        ${index === 0 ? '<div class="badge">&#9733; Most Worn</div>' : ''}
+        <div class="top-item-img">
+          <img src="${p.image_url}" alt="${p.name}" loading="lazy">
+        </div>
+        <div class="top-item-info">
+          <div class="top-name">${p.name}</div>
+          <div class="top-wears">Worn ${p.wears}&times;</div>
+        </div>
       </div>
     `;
   });
@@ -1034,8 +1245,6 @@ loadColorStats();
 loadStateStats();
 loadWearCounts();
 loadDrawerCounts();
-
 </script>
-
 </body>
 </html>

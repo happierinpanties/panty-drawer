@@ -1,180 +1,671 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Hall of Retired Panties</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    body { font-family: Arial; padding: 20px; }
-    .filters { margin-bottom: 20px; display: flex; gap: 10px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
-    img { width: 100%; border-radius: 8px; }
-.item {
-  text-align: center;
-}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Retired Panties</title>
+  <!-- Supabase loaded as ESM module below -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
 
-.item-name {
-  margin-top: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #666;
-}
+  <style>
+    /* ── Tokens ─────────────────────────────────────────────── */
+    :root {
+      --blush:   #f5e8e4;
+      --rose:    #c9847a;
+      --plum:    #6b3a45;
+      --ivory:   #fdf8f6;
+      --stone:   #8a7570;
+      --ink:     #2e1f22;
+      --border:  #e8d8d3;
+      --card-bg: #ffffff;
+      --nav-h:   64px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--ivory);
+      color: var(--ink);
+      font-weight: 300;
+    }
+
+    /* ── Nav ─────────────────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(253, 248, 246, 0.96);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      height: var(--nav-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+    }
+
+    .nav-wordmark {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      color: var(--plum);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 0;
+      list-style: none;
+      position: relative;
+    }
+
+    .nav-links > li {
+      position: relative;
+    }
+
+    .nav-links > li > a,
+    .nav-links > li > button {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 16px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--stone);
+      text-decoration: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .nav-links > li > a:hover,
+    .nav-links > li > button:hover,
+    .nav-links > li > a.active {
+      color: var(--plum);
+    }
+
+    .nav-links > li > a.active {
+      border-bottom: 2px solid var(--rose);
+    }
+
+    /* Dropdown */
+    .dropdown {
+      position: absolute;
+      top: calc(100% + 1px);
+      right: 0;
+      min-width: 180px;
+      background: var(--ivory);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--rose);
+      box-shadow: 0 8px 24px rgba(107,58,69,0.08);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-4px);
+      transition: opacity 0.18s, transform 0.18s;
+      list-style: none;
+    }
+
+    .nav-links > li:hover .dropdown,
+    .nav-links > li:focus-within .dropdown {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateY(0);
+    }
+
+    .dropdown li a {
+      display: block;
+      padding: 12px 20px;
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--stone);
+      text-decoration: none;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .dropdown li a:hover {
+      background: var(--blush);
+      color: var(--plum);
+    }
+
+    .chevron {
+      font-size: 9px;
+      transition: transform 0.2s;
+    }
+
+    .nav-links > li:hover .chevron {
+      transform: rotate(180deg);
+    }
+
+    /* ── Hero / Page Header ──────────────────────────────────── */
+    .page-header {
+      text-align: center;
+      padding: 56px 24px 40px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .page-header .eyebrow {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--rose);
+      margin-bottom: 14px;
+    }
+
+    .page-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(34px, 5vw, 52px);
+      font-weight: 400;
+      color: var(--plum);
+      line-height: 1.15;
+    }
+
+    .page-header h1 em {
+      font-style: italic;
+      font-weight: 400;
+    }
+
+    /* ── Filters ─────────────────────────────────────────────── */
+    .filter-bar {
+      background: var(--blush);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 32px;
+    }
+
+    .filter-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .filter-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--stone);
+      white-space: nowrap;
+    }
+
+    .filter-inner select {
+      appearance: none;
+      -webkit-appearance: none;
+      background: var(--ivory) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a7570'/%3E%3C/svg%3E") no-repeat right 12px center;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 9px 32px 9px 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--ink);
+      cursor: pointer;
+      transition: border-color 0.2s;
+      min-width: 140px;
+    }
+
+    .filter-inner select:focus {
+      outline: none;
+      border-color: var(--rose);
+    }
+
+    .filter-divider {
+      flex: 1;
+    }
+
+    .sort-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* ── Result count ─────────────────────────────────────────── */
+    .result-bar {
+      max-width: 1200px;
+      margin: 24px auto 0;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    #resultCount {
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--stone);
+    }
+
+    /* ── Grid ─────────────────────────────────────────────────── */
+    .grid-wrap {
+      max-width: 1200px;
+      margin: 24px auto 64px;
+      padding: 0 32px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 24px;
+    }
+
+    .item {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      transition: box-shadow 0.2s, transform 0.2s;
+      cursor: default;
+    }
+
+    .item:hover {
+      box-shadow: 0 8px 28px rgba(107,58,69,0.12);
+      transform: translateY(-3px);
+    }
+
+    .item-img-wrap {
+      position: relative;
+      background: var(--blush);
+      aspect-ratio: 3/4;
+      overflow: hidden;
+    }
+
+    .item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.4s ease;
+    }
+
+    .item:hover img {
+      transform: scale(1.04);
+    }
+
+    .item-info {
+      padding: 12px 14px 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    .item-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--ink);
+      margin-bottom: 4px;
+      line-height: 1.35;
+    }
+
+    .item-meta {
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.05em;
+      color: var(--stone);
+    }
+
+    .pip-copy-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+    }
+
+    .wear-pip-row {
+      display: flex;
+      gap: 3px;
+      flex-wrap: wrap;
+    }
+
+    .copy-btn {
+      flex-shrink: 0;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 3px 7px;
+      cursor: pointer;
+      color: var(--stone);
+      font-family: 'Inter', sans-serif;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      line-height: 1;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .copy-btn:hover {
+      background: var(--blush);
+      border-color: var(--rose);
+      color: var(--plum);
+    }
+
+    .copy-btn.copied {
+      background: var(--rose);
+      border-color: var(--rose);
+      color: #fff;
+    }
+
+    .pip {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--border);
+    }
+
+    .pip.filled {
+      background: var(--rose);
+    }
+
+    /* Empty state */
+    .empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 64px 24px;
+      color: var(--stone);
+    }
+
+    .empty p {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 18px;
+    }
+
+    /* Loading skeleton */
+    .skeleton {
+      background: linear-gradient(90deg, var(--blush) 25%, var(--border) 50%, var(--blush) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 2px;
+      border: 1px solid var(--border);
+    }
+
+    .skeleton-img {
+      aspect-ratio: 3/4;
+    }
+
+    .skeleton-text {
+      height: 13px;
+      margin: 12px 14px 4px;
+      width: 70%;
+    }
+
+    .skeleton-sub {
+      height: 11px;
+      margin: 0 14px 14px;
+      width: 45%;
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ── Footer ──────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 32px;
+      text-align: center;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--stone);
+    }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      nav { padding: 0 16px; }
+      .filter-bar { padding: 16px; }
+      .filter-inner { gap: 8px; }
+      .filter-inner select { min-width: 120px; font-size: 11px; }
+      .result-bar, .grid-wrap { padding: 0 16px; }
+      .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+    }
   </style>
 </head>
 <body>
 
-<h1>Hall of Retired Panties</h1>
+<!-- ── Navigation ───────────────────────────────────────────── -->
+<nav>
+  <a class="nav-wordmark" href="/">The Drawer</a>
 
-<div class="filters">
-<select id="color"></select>
-<select id="style"></select>
-<select id="brand"></select>
-<select id="fabric"></select>
+  <ul class="nav-links">
+    <li><a href="https://www.panty-drawer.com">Drawer</a></li>
+    <li>
+      <button aria-haspopup="true">Pages <span class="chevron">▾</span></button>
+      <ul class="dropdown">
+        <li><a href="/stats">Panty Stats</a></li>
+        <li><a href="/hamper">Hamper</a></li>
+        <li><a href="/retired" class="active">Retired Panties</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
 
-<select id="sort">
-  <option value="wear_desc">Worn count (high → low)</option>
-  <option value="wear_asc">Worn count (low → high)</option>
-  <option value="alpha_asc">Alphabetical (A → Z)</option>
-  <option value="alpha_desc">Alphabetical (Z → A)</option>
-</select>
+<!-- ── Page Header ───────────────────────────────────────────── -->
+<header class="page-header">
+  <p class="eyebrow">Honourably Discharged</p>
+  <h1>The <em>Retired</em></h1>
+</header>
+
+<!-- ── Filters ──────────────────────────────────────────────── -->
+<div class="filter-bar">
+  <div class="filter-inner">
+    <span class="filter-label">Filter</span>
+    <select id="color"></select>
+    <select id="style"></select>
+    <select id="brand"></select>
+    <select id="fabric"></select>
+    <div class="filter-divider"></div>
+    <div class="sort-wrap">
+      <span class="filter-label">Sort</span>
+      <select id="sort">
+        <option value="wear_desc">Most worn</option>
+        <option value="wear_asc">Least worn</option>
+        <option value="alpha_asc">A → Z</option>
+        <option value="alpha_desc">Z → A</option>
+      </select>
+    </div>
+  </div>
 </div>
 
-<div id="resultCount" style="margin-bottom:15px; font-size:14px; font-weight:500; color:#444;"></div>
+<!-- ── Result count ─────────────────────────────────────────── -->
+<div class="result-bar">
+  <span id="resultCount"></span>
+</div>
 
-<div class="grid" id="grid"></div>
+<!-- ── Grid ─────────────────────────────────────────────────── -->
+<div class="grid-wrap">
+  <div class="grid" id="grid">
+    <!-- populated by JS -->
+  </div>
+</div>
 
-<script>
-const client = window.supabase.createClient(
+<footer>
+  &copy; The Drawer &nbsp;·&nbsp; Gone but not forgotten
+</footer>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const client = createClient(
   'https://rkocfrsaeeyxgfdxeiqz.supabase.co',
   'sb_publishable_yp7myP1S5wmYLQrgwNWxhg_IfZHdeZj'
 );
 
+// ── Pip helpers ───────────────────────────────────────────────
+function renderPips(wears) {
+  const MAX_PIPS = 10;
+  const filled = Math.min(wears, MAX_PIPS);
+  return Array.from({length: MAX_PIPS}, (_, i) =>
+    `<span class="pip${i < filled ? ' filled' : ''}"></span>`
+  ).join('');
+}
+
+// ── Filters ───────────────────────────────────────────────────
 async function loadFilters() {
-  // Load brands
-  const { data: brands } = await client.from('brands').select('id, name').order('name');
-  const { data: styles } = await client.from('styles').select('id, name').order('name');
-  const { data: fabrics } = await client.from('fabrics').select('id, name').order('name');
+  const [brandsRes, stylesRes, fabricsRes, colorsRes] = await Promise.all([
+    client.from('brands').select('id, name').order('name'),
+    client.from('styles').select('id, name').order('name'),
+    client.from('fabrics').select('id, name').order('name'),
+    client.from('panties').select('color').order('color'),
+  ]);
 
-  const { data: colors } = await client
-    .from('panties')
-    .select('color')
-    .order('color');
+  if (brandsRes.error) console.error('Brands error:', JSON.stringify(brandsRes.error));
+  if (stylesRes.error) console.error('Styles error:', JSON.stringify(stylesRes.error));
+  if (fabricsRes.error) console.error('Fabrics error:', JSON.stringify(fabricsRes.error));
+  if (colorsRes.error) console.error('Colors error:', JSON.stringify(colorsRes.error));
 
-  populateSelect('brand', brands, 'name');
-  populateSelect('style', styles, 'name');
-  populateSelect('fabric', fabrics, 'name');
+  const brands  = brandsRes.data  || [];
+  const styles  = stylesRes.data  || [];
+  const fabrics = fabricsRes.data || [];
+  const colors  = colorsRes.data  || [];
+
+  populateSelect('brand', brands, 'name', 'All Brands');
+  populateSelect('style', styles, 'name', 'All Styles');
+  populateSelect('fabric', fabrics, 'name', 'All Fabrics');
   populateColorSelect(colors);
 }
 
-function populateSelect(id, options, labelField) {
-  const select = document.getElementById(id);
-  select.innerHTML = `<option value="">All ${id}</option>`;
-
+function populateSelect(id, options, labelField, placeholder) {
+  const el = document.getElementById(id);
+  el.innerHTML = `<option value="">${placeholder}</option>`;
   options.forEach(opt => {
-    select.innerHTML += `<option value="${opt.id}">${opt[labelField]}</option>`;
+    el.innerHTML += `<option value="${opt.id}">${opt[labelField]}</option>`;
   });
-
-  select.addEventListener('change', loadPanties);
+  el.addEventListener('change', loadPanties);
 }
 
 function populateColorSelect(colors) {
-  const select = document.getElementById('color');
-  const uniqueColors = [...new Set(colors.map(c => c.color))];
-
-  select.innerHTML = `<option value="">All colors</option>`;
-  uniqueColors.forEach(color => {
-    select.innerHTML += `<option value="${color}">${color}</option>`;
-  });
-
-  select.addEventListener('change', loadPanties);
+  const el = document.getElementById('color');
+  const unique = [...new Set(colors.map(c => c.color))].filter(Boolean);
+  el.innerHTML = `<option value="">All Colors</option>`;
+  unique.forEach(c => { el.innerHTML += `<option value="${c}">${c}</option>`; });
+  el.addEventListener('change', loadPanties);
 }
 
+// ── Skeleton loader ───────────────────────────────────────────
+function showSkeletons() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = Array.from({length: 8}).map(() => `
+    <div>
+      <div class="skeleton skeleton-img"></div>
+      <div class="skeleton skeleton-text"></div>
+      <div class="skeleton skeleton-sub"></div>
+    </div>
+  `).join('');
+}
+
+// ── Main load ─────────────────────────────────────────────────
 async function loadPanties() {
+  const grid = document.getElementById('grid');
+  const countDiv = document.getElementById('resultCount');
+
+  showSkeletons();
+  countDiv.innerText = '';
+
   let query = client
-.from('panties')
-.select(`
-  id,
-  name,
-  color,
-  image_url,
-  brands ( id, name ),
-  styles ( id, name ),
-  fabrics ( id, name )
-`)
+    .from('panties')
+    .select(`id, name, color, image_url, brands(id,name), styles(id,name), fabrics(id,name)`)
     .eq('status', 'Retired');
 
-  const brand = document.getElementById('brand').value;
-  const style = document.getElementById('style').value;
+  const brand  = document.getElementById('brand').value;
+  const style  = document.getElementById('style').value;
   const fabric = document.getElementById('fabric').value;
-  const color = document.getElementById('color').value;
+  const color  = document.getElementById('color').value;
 
-  if (brand) query = query.eq('brand_id', brand);
-  if (style) query = query.eq('style_id', style);
+  if (brand)  query = query.eq('brand_id', brand);
+  if (style)  query = query.eq('style_id', style);
   if (fabric) query = query.eq('fabric_id', fabric);
-  if (color) query = query.eq('color', color);
+  if (color)  query = query.eq('color', color);
 
-  const { data } = await query;
+  const [pantiesResult, wearResult] = await Promise.all([
+    query,
+    client.from('panty_wear_counts').select('id, wears'),
+  ]);
 
-// Fetch wear counts separately
-const { data: wearCounts } = await client
-  .from('panty_wear_counts')
-  .select('id, wears');
+  if (pantiesResult.error) {
+    console.error('Error fetching panties:', JSON.stringify(pantiesResult.error));
+    grid.innerHTML = '<div class="empty"><p>Could not load items. Check the console for details.</p></div>';
+    return;
+  }
 
-// Create a lookup map
-const wearMap = {};
-wearCounts.forEach(w => {
-  wearMap[w.id] = w.wears;
-});
+  const data = pantiesResult.data;
+  const wearCounts = wearResult.data || [];
 
-  const grid = document.getElementById('grid');
-  grid.innerHTML = '';
+  const wearMap = {};
+  (wearCounts || []).forEach(w => { wearMap[w.id] = w.wears; });
 
-const countDiv = document.getElementById('resultCount');
+  if (!data || data.length === 0) {
+    countDiv.innerText = '0 items';
+    grid.innerHTML = '<div class="empty"><p>Nothing here yet.</p></div>';
+    return;
+  }
 
-if (!data || data.length === 0) {
-  countDiv.innerText = "0 panties";
-  grid.innerHTML = '<p>No items found.</p>';
-  return;
-}
+  // Sort
+  const sortValue = document.getElementById('sort').value;
+  data.sort((a, b) => {
+    const wA = wearMap[a.id] || 0, wB = wearMap[b.id] || 0;
+    if (sortValue === 'wear_desc') return wB - wA;
+    if (sortValue === 'wear_asc')  return wA - wB;
+    if (sortValue === 'alpha_asc') return a.name.localeCompare(b.name);
+    if (sortValue === 'alpha_desc') return b.name.localeCompare(a.name);
+    return 0;
+  });
 
-// Apply sorting
-const sortValue = document.getElementById('sort').value;
+  countDiv.innerText = `${data.length} ${data.length === 1 ? 'item' : 'items'}`;
 
-data.sort((a, b) => {
-  const wearA = wearMap[a.id] || 0;
-  const wearB = wearMap[b.id] || 0;
-
-  if (sortValue === 'wear_desc') return wearB - wearA;
-  if (sortValue === 'wear_asc') return wearA - wearB;
-  if (sortValue === 'alpha_asc') return a.name.localeCompare(b.name);
-  if (sortValue === 'alpha_desc') return b.name.localeCompare(a.name);
-
-  return 0;
-});
-
-countDiv.innerText = `${data.length} ${data.length === 1 ? 'panty' : 'panties'}`;
-
-data.forEach(p => {
-  const wears = wearMap[p.id] || 0;
-
-  grid.innerHTML += `
-    <div class="item">
-      <img src="${p.image_url}" alt="${p.name}">
-      <div class="item-name">
-        ${p.name}
-        <div style="font-size:12px; color:#999; margin-top:4px;">
-          Worn ${wears} times
+  grid.innerHTML = data.map(p => {
+    const wears = wearMap[p.id] || 0;
+    const brand = p.brands?.name || '';
+    return `
+      <div class="item">
+        <div class="item-img-wrap">
+          <img src="${p.image_url}" alt="${p.name}" loading="lazy" />
         </div>
-      </div>
-    </div>
-  `;
-});
+        <div class="item-info">
+          <div class="item-name">${p.name}</div>
+          <div class="item-meta">${brand ? brand + ' · ' : ''}Worn ${wears}×</div>
+          <div class="pip-copy-row">
+            <div class="wear-pip-row" title="Wear history (up to 10)">
+              ${renderPips(wears)}
+            </div>
+            <button class="copy-btn" data-name="${p.name.replace(/"/g, '&quot;')}">Copy</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
 }
+
+// Copy button — event delegation so it works inside module scope
+document.getElementById('grid').addEventListener('click', e => {
+  const btn = e.target.closest('.copy-btn');
+  if (!btn) return;
+  const name = btn.dataset.name;
+  navigator.clipboard.writeText(name).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copy';
+      btn.classList.remove('copied');
+    }, 1800);
+  });
+});
 
 document.getElementById('sort').addEventListener('change', loadPanties);
 
 loadFilters();
 loadPanties();
 </script>
-
 </body>
 </html>
