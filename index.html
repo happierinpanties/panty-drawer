@@ -315,6 +315,25 @@
       color: var(--stone);
     }
 
+    .scheduled-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 6px;
+      background: var(--blush);
+      border: 1px solid var(--rose);
+      border-radius: 20px;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: var(--plum);
+    }
+
+    .scheduled-pill svg {
+      flex-shrink: 0;
+    }
+
     .pip-copy-row {
       display: flex;
       align-items: center;
@@ -447,6 +466,7 @@
         <li><a href="/stats">Panty Stats</a></li>
         <li><a href="/hamper">Hamper</a></li>
         <li><a href="/retired">Retired Panties</a></li>
+        <li><a href="/schedule">Wear Schedule</a></li>
       </ul>
     </li>
   </ul>
@@ -589,10 +609,19 @@ async function loadPanties() {
   if (fabric) query = query.eq('fabric_id', fabric);
   if (color)  query = query.eq('color', color);
 
-  const [pantiesResult, wearResult] = await Promise.all([
+  const [pantiesResult, wearResult, scheduleResult] = await Promise.all([
     query,
     client.from('panty_wear_counts').select('id, wears'),
+    client.from('wear_schedule').select('panty_id, schedule_date').gte('schedule_date', new Date().toISOString().split('T')[0]).order('schedule_date', { ascending: true }),
   ]);
+
+  // Build a map of panty_id -> next scheduled date
+  const scheduleMap = {};
+  (scheduleResult.data || []).forEach(row => {
+    if (!scheduleMap[row.panty_id]) {
+      scheduleMap[row.panty_id] = row.schedule_date;
+    }
+  });
 
   if (pantiesResult.error) {
     console.error('Error fetching panties:', JSON.stringify(pantiesResult.error));
@@ -628,6 +657,19 @@ async function loadPanties() {
   grid.innerHTML = data.map(p => {
     const wears = wearMap[p.id] || 0;
     const brand = p.brands?.name || '';
+    const nextDate = scheduleMap[p.id];
+    const pillHtml = nextDate ? (() => {
+      const d = new Date(nextDate + 'T00:00:00');
+      const label = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      return `<div class="scheduled-pill">
+        <svg width="9" height="9" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="2" width="10" height="9" rx="1.5" stroke="#6b3a45" stroke-width="1.2"/>
+          <path d="M4 1v2M8 1v2" stroke="#6b3a45" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M1 5h10" stroke="#6b3a45" stroke-width="1.2"/>
+        </svg>
+        ${label}
+      </div>`;
+    })() : '';
     return `
       <div class="item">
         <div class="item-img-wrap">
@@ -636,6 +678,7 @@ async function loadPanties() {
         <div class="item-info">
           <div class="item-name">${p.name}</div>
           <div class="item-meta">${brand ? brand + ' · ' : ''}Worn ${wears}×</div>
+          ${pillHtml}
           <div class="pip-copy-row">
             <div class="wear-pip-row" title="Wear history (up to 10)">
               ${renderPips(wears)}
