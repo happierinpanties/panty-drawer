@@ -460,6 +460,123 @@
       color: var(--stone);
     }
 
+    /* ── Panty picker ────────────────────────────────────────── */
+    .picker-wrap {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 20px;
+    }
+
+    .picker-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .picker-search {
+      flex: 1;
+      min-width: 160px;
+      appearance: none;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 9px 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      color: var(--ink);
+      background: var(--ivory);
+    }
+
+    .picker-search:focus { outline: none; border-color: var(--rose); }
+
+    .picker-filter {
+      appearance: none;
+      -webkit-appearance: none;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 9px 32px 9px 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      color: var(--ink);
+      background: var(--ivory) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a7570'/%3E%3C/svg%3E") no-repeat right 10px center;
+      cursor: pointer;
+      min-width: 120px;
+    }
+
+    .picker-filter:focus { outline: none; border-color: var(--rose); }
+
+    .picker-selected-label {
+      font-size: 12px;
+      color: var(--stone);
+      margin-bottom: 12px;
+      min-height: 18px;
+    }
+
+    .picker-selected-label strong {
+      color: var(--plum);
+      font-weight: 500;
+    }
+
+    .picker-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 10px;
+      max-height: 380px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .picker-grid::-webkit-scrollbar { width: 4px; }
+    .picker-grid::-webkit-scrollbar-track { background: var(--blush); }
+    .picker-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .picker-card {
+      background: var(--ivory);
+      border: 2px solid var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+
+    .picker-card:hover { border-color: var(--stone); transform: translateY(-1px); }
+
+    .picker-card.selected {
+      border-color: var(--rose);
+      box-shadow: 0 0 0 2px var(--rose);
+    }
+
+    .picker-card-img {
+      aspect-ratio: 3/4;
+      overflow: hidden;
+      background: var(--blush);
+    }
+
+    .picker-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .picker-card-name {
+      padding: 5px 6px;
+      font-size: 9px;
+      font-weight: 500;
+      color: var(--stone);
+      line-height: 1.3;
+      letter-spacing: 0.02em;
+    }
+
+    .picker-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 32px;
+      color: var(--stone);
+      font-style: italic;
+      font-size: 13px;
+    }
+
     /* ── Responsive ──────────────────────────────────────────── */
     @media (max-width: 700px) {
       nav { padding: 0 16px; }
@@ -515,20 +632,31 @@
 
     <div class="section">
       <div class="section-title">Add to Schedule</div>
-      <form class="schedule-form" id="scheduleForm">
-        <div class="form-group">
-          <label class="form-label" for="pantySelect">Panty</label>
-          <select id="pantySelect" required></select>
+
+      <!-- Panty picker -->
+      <div class="picker-wrap" style="margin-bottom:16px;">
+        <div class="form-label" style="margin-bottom:12px;">Choose a Panty</div>
+        <div class="picker-controls">
+          <input class="picker-search" type="text" id="pickerSearch" placeholder="Search by name..." />
+          <select class="picker-filter" id="pickerColor"></select>
+          <select class="picker-filter" id="pickerStyle"></select>
+          <select class="picker-filter" id="pickerBrand"></select>
         </div>
+        <div class="picker-selected-label" id="pickerSelectedLabel">No panty selected</div>
+        <div class="picker-grid" id="pickerGrid"></div>
+      </div>
+
+      <!-- Rest of form -->
+      <form class="schedule-form" id="scheduleForm">
         <div class="form-group">
           <label class="form-label" for="dateInput">Date</label>
           <input type="date" id="dateInput" required />
         </div>
-        <div class="form-group full">
+        <div class="form-group">
           <label class="form-label" for="notesInput">Notes <span style="text-transform:none; font-weight:400;">(optional)</span></label>
           <textarea id="notesInput" placeholder="Any notes for this scheduled wear..."></textarea>
         </div>
-        <div class="form-submit-row">
+        <div class="form-submit-row" style="grid-column:1/-1;">
           <button type="submit" class="btn-primary" id="scheduleSubmitBtn">Add to Schedule</button>
           <span class="form-status" id="scheduleStatus"></span>
         </div>
@@ -632,22 +760,102 @@ async function checkAllowed(email) {
   return !!data;
 }
 
-// ── Panty dropdown ────────────────────────────────────────────
-async function loadPantyOptions() {
-  const { data, error } = await client
-    .from('panties')
-    .select('id, name')
-    .order('name');
+// ── Panty picker ──────────────────────────────────────────────
+let allPanties = [];
+let selectedPantyId = null;
 
-  const select = document.getElementById('pantySelect');
-  if (error || !data) {
-    select.innerHTML = '<option value="">Could not load panties</option>';
-    console.error('Panty load error:', JSON.stringify(error));
+async function loadPantyPicker() {
+  const [pantiesRes, brandsRes, stylesRes, colorsRes] = await Promise.all([
+    client.from('panties')
+      .select('id, name, image_url, color, brand_id, style_id, brands(id,name), styles(id,name)')
+      .eq('status', 'Clean')
+      .order('name'),
+    client.from('brands').select('id, name').order('name'),
+    client.from('styles').select('id, name').order('name'),
+    client.from('panties').select('color').eq('status', 'Clean').order('color'),
+  ]);
+
+  if (pantiesRes.error) {
+    console.error('Picker load error:', JSON.stringify(pantiesRes.error));
     return;
   }
 
-  select.innerHTML = data.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  allPanties = pantiesRes.data || [];
+
+  // Populate filter dropdowns
+  populatePickerFilter('pickerBrand', brandsRes.data || [], 'name', 'All Brands');
+  populatePickerFilter('pickerStyle', stylesRes.data || [], 'name', 'All Styles');
+  populatePickerColorFilter(colorsRes.data || []);
+
+  // Wire up filters & search
+  ['pickerSearch', 'pickerColor', 'pickerStyle', 'pickerBrand'].forEach(id => {
+    document.getElementById(id).addEventListener('input', renderPickerGrid);
+    document.getElementById(id).addEventListener('change', renderPickerGrid);
+  });
+
+  renderPickerGrid();
 }
+
+function populatePickerFilter(id, options, labelField, placeholder) {
+  const el = document.getElementById(id);
+  el.innerHTML = `<option value="">${placeholder}</option>`;
+  options.forEach(o => {
+    el.innerHTML += `<option value="${o.id}">${o[labelField]}</option>`;
+  });
+}
+
+function populatePickerColorFilter(colors) {
+  const el = document.getElementById('pickerColor');
+  const unique = [...new Set(colors.map(c => c.color))].filter(Boolean);
+  el.innerHTML = `<option value="">All Colors</option>`;
+  unique.forEach(c => { el.innerHTML += `<option value="${c}">${c}</option>`; });
+}
+
+function renderPickerGrid() {
+  const search = document.getElementById('pickerSearch').value.toLowerCase().trim();
+  const color  = document.getElementById('pickerColor').value;
+  const style  = document.getElementById('pickerStyle').value;
+  const brand  = document.getElementById('pickerBrand').value;
+
+  const filtered = allPanties.filter(p => {
+    if (search && !p.name.toLowerCase().includes(search)) return false;
+    if (color  && p.color !== color) return false;
+    if (style  && String(p.style_id) !== style) return false;
+    if (brand  && String(p.brand_id) !== brand) return false;
+    return true;
+  });
+
+  const grid = document.getElementById('pickerGrid');
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div class="picker-empty">No panties match these filters.</div>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(p => `
+    <div class="picker-card${p.id === selectedPantyId ? ' selected' : ''}"
+         data-id="${p.id}" data-name="${p.name.replace(/"/g, '&quot;')}">
+      <div class="picker-card-img">
+        <img src="${p.image_url}" alt="${p.name}" loading="lazy" />
+      </div>
+      <div class="picker-card-name">${p.name}</div>
+    </div>
+  `).join('');
+}
+
+document.addEventListener('click', (e) => {
+  const card = e.target.closest('.picker-card');
+  if (!card) return;
+  selectedPantyId = card.dataset.id;
+  const name = card.dataset.name;
+
+  // Update selected label
+  document.getElementById('pickerSelectedLabel').innerHTML =
+    `Selected: <strong>${name}</strong>`;
+
+  // Re-render grid to show selected highlight without refetching
+  renderPickerGrid();
+});
 
 // ── Schedule list ─────────────────────────────────────────────
 async function loadSchedule() {
@@ -709,9 +917,15 @@ document.getElementById('scheduleForm').addEventListener('submit', async (e) => 
 
   const statusEl = document.getElementById('scheduleStatus');
   const submitBtn = document.getElementById('scheduleSubmitBtn');
-  const pantyId = document.getElementById('pantySelect').value;
+  const pantyId = selectedPantyId;
   const date = document.getElementById('dateInput').value;
   const notes = document.getElementById('notesInput').value.trim();
+
+  if (!pantyId) {
+    statusEl.textContent = 'Please select a panty first.';
+    statusEl.className = 'form-status error';
+    return;
+  }
 
   submitBtn.disabled = true;
   statusEl.textContent = 'Saving...';
@@ -736,6 +950,9 @@ document.getElementById('scheduleForm').addEventListener('submit', async (e) => 
   statusEl.textContent = 'Added!';
   statusEl.className = 'form-status success';
   document.getElementById('notesInput').value = '';
+  selectedPantyId = null;
+  document.getElementById('pickerSelectedLabel').innerHTML = 'No panty selected';
+  renderPickerGrid();
   loadSchedule();
   setTimeout(() => { statusEl.textContent = ''; }, 2000);
 });
@@ -747,7 +964,7 @@ async function init() {
   renderAuthArea();
   renderPageState();
 
-  loadPantyOptions();
+  loadPantyPicker();
   loadSchedule();
 
   // Default date input to today
