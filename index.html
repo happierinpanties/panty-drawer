@@ -316,18 +316,22 @@
     }
 
     .scheduled-pill {
+      position: absolute;
+      top: 8px;
+      left: 8px;
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      margin-top: 6px;
-      background: var(--blush);
+      background: rgba(253, 248, 246, 0.92);
       border: 1px solid var(--rose);
       border-radius: 20px;
-      padding: 3px 8px;
+      padding: 4px 8px;
       font-size: 10px;
       font-weight: 500;
       letter-spacing: 0.04em;
       color: var(--plum);
+      backdrop-filter: blur(4px);
+      z-index: 1;
     }
 
     .scheduled-pill svg {
@@ -673,12 +677,12 @@ async function loadPanties() {
     return `
       <div class="item">
         <div class="item-img-wrap">
+          ${pillHtml}
           <img src="${p.image_url}" alt="${p.name}" loading="lazy" />
         </div>
         <div class="item-info">
           <div class="item-name">${p.name}</div>
           <div class="item-meta">${brand ? brand + ' · ' : ''}Worn ${wears}×</div>
-          ${pillHtml}
           <div class="pip-copy-row">
             <div class="wear-pip-row" title="Wear history (up to 10)">
               ${renderPips(wears)}
