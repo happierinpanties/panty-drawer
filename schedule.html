@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wear Schedule</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --blush:   #f5e8e4;
+      --rose:    #c9847a;
+      --plum:    #6b3a45;
+      --ivory:   #fdf8f6;
+      --stone:   #8a7570;
+      --ink:     #2e1f22;
+      --border:  #e8d8d3;
+      --card-bg: #ffffff;
+      --nav-h:   64px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--ivory);
+      color: var(--ink);
+      font-weight: 300;
+    }
+
+    /* ── Nav ─────────────────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(253,248,246,0.96);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      height: var(--nav-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+    }
+
+    .nav-wordmark {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      color: var(--plum);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      list-style: none;
+      position: relative;
+    }
+
+    .nav-links > li { position: relative; }
+
+    .nav-links > li > a,
+    .nav-links > li > button {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 16px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--stone);
+      text-decoration: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .nav-links > li > a:hover,
+    .nav-links > li > button:hover { color: var(--plum); }
+
+    .nav-links > li > a.active {
+      color: var(--plum);
+      border-bottom: 2px solid var(--rose);
+    }
+
+    .dropdown {
+      position: absolute;
+      top: calc(100% + 1px);
+      right: 0;
+      min-width: 180px;
+      background: var(--ivory);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--rose);
+      box-shadow: 0 8px 24px rgba(107,58,69,0.08);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-4px);
+      transition: opacity 0.18s, transform 0.18s;
+      list-style: none;
+    }
+
+    .nav-links > li:hover .dropdown,
+    .nav-links > li:focus-within .dropdown {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateY(0);
+    }
+
+    .dropdown li a {
+      display: block;
+      padding: 12px 20px;
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--stone);
+      text-decoration: none;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .dropdown li a:hover { background: var(--blush); color: var(--plum); }
+
+    .chevron { font-size: 9px; transition: transform 0.2s; }
+    .nav-links > li:hover .chevron { transform: rotate(180deg); }
+
+    /* Auth area in nav */
+    .auth-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: 8px;
+      padding-left: 16px;
+      border-left: 1px solid var(--border);
+    }
+
+    .auth-email {
+      font-size: 11px;
+      color: var(--stone);
+      letter-spacing: 0.04em;
+    }
+
+    .btn-text {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--rose);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px 10px;
+      transition: color 0.2s;
+    }
+
+    .btn-text:hover { color: var(--plum); }
+
+    /* ── Page Header ─────────────────────────────────────────── */
+    .page-header {
+      text-align: center;
+      padding: 56px 24px 40px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .page-header .eyebrow {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--rose);
+      margin-bottom: 14px;
+    }
+
+    .page-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(34px, 5vw, 52px);
+      font-weight: 400;
+      color: var(--plum);
+      line-height: 1.15;
+    }
+
+    .page-header h1 em { font-style: italic; }
+
+    /* ── Layout ──────────────────────────────────────────────── */
+    .content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 32px 80px;
+    }
+
+    .section { margin-top: 48px; }
+    .section:first-child { margin-top: 0; }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--plum);
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    /* ── Sign-in card (shown when logged out) ───────────────── */
+    .signin-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--rose);
+      padding: 40px;
+      text-align: center;
+      max-width: 420px;
+      margin: 0 auto;
+    }
+
+    .signin-card p {
+      font-size: 13px;
+      color: var(--stone);
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .signin-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    input[type="email"] {
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 11px 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      color: var(--ink);
+      background: var(--ivory);
+    }
+
+    input[type="email"]:focus {
+      outline: none;
+      border-color: var(--rose);
+    }
+
+    .btn-primary {
+      background: var(--plum);
+      color: #fff;
+      border: none;
+      border-radius: 2px;
+      padding: 12px 20px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover { background: var(--rose); }
+    .btn-primary:disabled { background: var(--border); cursor: default; }
+
+    .signin-status {
+      font-size: 12px;
+      color: var(--stone);
+      margin-top: 14px;
+      min-height: 16px;
+    }
+
+    .signin-status.success { color: var(--plum); }
+    .signin-status.error { color: #a33; }
+
+    /* ── Scheduling form ─────────────────────────────────────── */
+    .schedule-form {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 28px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      align-items: end;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    .form-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--stone);
+    }
+
+    select, input[type="date"], textarea {
+      appearance: none;
+      -webkit-appearance: none;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 10px 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      color: var(--ink);
+      background: var(--ivory);
+    }
+
+    select {
+      background: var(--ivory) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a7570'/%3E%3C/svg%3E") no-repeat right 14px center;
+      padding-right: 32px;
+    }
+
+    select:focus, input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--rose);
+    }
+
+    textarea { resize: vertical; min-height: 60px; font-family: 'Inter', sans-serif; }
+
+    .form-submit-row {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .form-status {
+      font-size: 12px;
+      color: var(--stone);
+    }
+
+    .form-status.success { color: var(--plum); }
+    .form-status.error { color: #a33; }
+
+    /* ── Scheduled list ──────────────────────────────────────── */
+    .schedule-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .schedule-row {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .schedule-thumb {
+      width: 48px;
+      height: 64px;
+      flex-shrink: 0;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--blush);
+    }
+
+    .schedule-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .schedule-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .schedule-date {
+      font-family: 'Playfair Display', serif;
+      font-size: 15px;
+      color: var(--plum);
+    }
+
+    .schedule-name {
+      font-size: 12px;
+      color: var(--ink);
+      margin-top: 2px;
+    }
+
+    .schedule-notes {
+      font-size: 11px;
+      font-style: italic;
+      color: var(--stone);
+      margin-top: 3px;
+    }
+
+    .schedule-by {
+      font-size: 10px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--stone);
+      white-space: nowrap;
+    }
+
+    .delete-btn {
+      flex-shrink: 0;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 6px 10px;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--stone);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .delete-btn:hover {
+      background: #a33;
+      border-color: #a33;
+      color: #fff;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 40px 24px;
+      color: var(--stone);
+    }
+
+    .empty p {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 16px;
+    }
+
+    .locked-note {
+      text-align: center;
+      font-size: 12px;
+      color: var(--stone);
+      margin-top: 16px;
+      font-style: italic;
+    }
+
+    /* ── Footer ──────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 32px;
+      text-align: center;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--stone);
+    }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 700px) {
+      nav { padding: 0 16px; }
+      .content { padding: 24px 16px 60px; }
+      .schedule-form { grid-template-columns: 1fr; }
+      .schedule-row { flex-wrap: wrap; }
+      .auth-email { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-wordmark" href="https://www.panty-drawer.com">The Drawer</a>
+  <ul class="nav-links">
+    <li><a href="https://www.panty-drawer.com">Drawer</a></li>
+    <li>
+      <button aria-haspopup="true">Pages <span class="chevron">&#9662;</span></button>
+      <ul class="dropdown">
+        <li><a href="/stats">Panty Stats</a></li>
+        <li><a href="/hamper">Hamper</a></li>
+        <li><a href="/retired">Retired Panties</a></li>
+        <li><a href="/schedule" class="active">Wear Schedule</a></li>
+      </ul>
+    </li>
+    <li class="auth-area" id="authArea">
+      <!-- populated by JS -->
+    </li>
+  </ul>
+</nav>
+
+<header class="page-header">
+  <p class="eyebrow">Plan Ahead</p>
+  <h1>Wear <em>Schedule</em></h1>
+</header>
+
+<div class="content">
+
+  <!-- Signed-out state -->
+  <div class="section" id="signedOutSection" style="display:none;">
+    <div class="signin-card">
+      <p>Sign in to view and manage the wear schedule.</p>
+      <form class="signin-form" id="signinForm">
+        <input type="email" id="signinEmail" placeholder="you@example.com" required />
+        <button type="submit" class="btn-primary">Send Magic Link</button>
+      </form>
+      <div class="signin-status" id="signinStatus"></div>
+    </div>
+  </div>
+
+  <!-- Signed-in state -->
+  <div id="signedInContent" style="display:none;">
+
+    <div class="section">
+      <div class="section-title">Add to Schedule</div>
+      <form class="schedule-form" id="scheduleForm">
+        <div class="form-group">
+          <label class="form-label" for="pantySelect">Panty</label>
+          <select id="pantySelect" required></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="dateInput">Date</label>
+          <input type="date" id="dateInput" required />
+        </div>
+        <div class="form-group full">
+          <label class="form-label" for="notesInput">Notes <span style="text-transform:none; font-weight:400;">(optional)</span></label>
+          <textarea id="notesInput" placeholder="Any notes for this scheduled wear..."></textarea>
+        </div>
+        <div class="form-submit-row">
+          <button type="submit" class="btn-primary" id="scheduleSubmitBtn">Add to Schedule</button>
+          <span class="form-status" id="scheduleStatus"></span>
+        </div>
+      </form>
+      <div class="locked-note" id="notAllowedNote" style="display:none;">
+        You're signed in, but this account isn't on the approved list for scheduling yet.
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Upcoming</div>
+      <div class="schedule-list" id="scheduleList"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<footer>
+  &copy; The Drawer &nbsp;&middot;&nbsp; Wear Schedule
+</footer>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const client = createClient(
+  'https://rkocfrsaeeyxgfdxeiqz.supabase.co',
+  'sb_publishable_yp7myP1S5wmYLQrgwNWxhg_IfZHdeZj'
+);
+
+let currentSession = null;
+let currentlyAllowed = false;
+
+// ── Auth UI rendering ─────────────────────────────────────────
+function renderAuthArea() {
+  const area = document.getElementById('authArea');
+  if (currentSession) {
+    area.innerHTML = `
+      <span class="auth-email">${currentSession.user.email}</span>
+      <button class="btn-text" id="signOutBtn">Sign Out</button>
+    `;
+    document.getElementById('signOutBtn').addEventListener('click', signOut);
+  } else {
+    area.innerHTML = `<a href="#" class="btn-text" id="navSignInLink">Sign In</a>`;
+    document.getElementById('navSignInLink').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('signedOutSection').scrollIntoView({ behavior: 'smooth' });
+    });
+  }
+}
+
+function renderPageState() {
+  document.getElementById('signedOutSection').style.display = currentSession ? 'none' : 'block';
+  document.getElementById('signedInContent').style.display = currentSession ? 'block' : 'none';
+}
+
+// ── Sign in / out ─────────────────────────────────────────────
+document.getElementById('signinForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('signinEmail').value.trim();
+  const statusEl = document.getElementById('signinStatus');
+  statusEl.textContent = 'Sending...';
+  statusEl.className = 'signin-status';
+
+  const { error } = await client.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href }
+  });
+
+  if (error) {
+    statusEl.textContent = 'Something went wrong. Please try again.';
+    statusEl.className = 'signin-status error';
+    console.error('Sign-in error:', JSON.stringify(error));
+  } else {
+    statusEl.textContent = 'Check your email for a sign-in link.';
+    statusEl.className = 'signin-status success';
+  }
+});
+
+async function signOut() {
+  await client.auth.signOut();
+  currentSession = null;
+  renderAuthArea();
+  renderPageState();
+}
+
+// ── Check allowlist ───────────────────────────────────────────
+async function checkAllowed(email) {
+  const { data, error } = await client
+    .from('allowed_users')
+    .select('email')
+    .eq('email', email)
+    .maybeSingle();
+
+  if (error) {
+    // Expected: this table has no public SELECT policy, so this will
+    // normally fail/return nothing for anyone. We rely on the INSERT
+    // policy itself as the real gate — this is just for UI messaging.
+    return false;
+  }
+  return !!data;
+}
+
+// ── Panty dropdown ────────────────────────────────────────────
+async function loadPantyOptions() {
+  const { data, error } = await client
+    .from('panties')
+    .select('id, name')
+    .order('name');
+
+  const select = document.getElementById('pantySelect');
+  if (error || !data) {
+    select.innerHTML = '<option value="">Could not load panties</option>';
+    console.error('Panty load error:', JSON.stringify(error));
+    return;
+  }
+
+  select.innerHTML = data.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+}
+
+// ── Schedule list ─────────────────────────────────────────────
+async function loadSchedule() {
+  const list = document.getElementById('scheduleList');
+  const { data, error } = await client
+    .from('wear_schedule')
+    .select(`id, schedule_date, notes, user_id, panties ( id, name, image_url )`)
+    .order('schedule_date', { ascending: true });
+
+  if (error) {
+    list.innerHTML = '<div class="empty"><p>Could not load the schedule.</p></div>';
+    console.error('Schedule load error:', JSON.stringify(error));
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.innerHTML = '<div class="empty"><p>Nothing scheduled yet.</p></div>';
+    return;
+  }
+
+  list.innerHTML = data.map(row => {
+    const panty = row.panties || {};
+    const dateStr = new Date(row.schedule_date + 'T00:00:00').toLocaleDateString(undefined, {
+      weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+    });
+    const isOwn = currentSession && row.user_id === currentSession.user.id;
+    return `
+      <div class="schedule-row">
+        <div class="schedule-thumb">
+          <img src="${panty.image_url || ''}" alt="${panty.name || ''}" loading="lazy" />
+        </div>
+        <div class="schedule-main">
+          <div class="schedule-date">${dateStr}</div>
+          <div class="schedule-name">${panty.name || 'Unknown'}</div>
+          ${row.notes ? `<div class="schedule-notes">${row.notes}</div>` : ''}
+        </div>
+        ${isOwn ? `<button class="delete-btn" data-id="${row.id}">Remove</button>` : ''}
+      </div>`;
+  }).join('');
+}
+
+document.getElementById('scheduleList').addEventListener('click', async (e) => {
+  const btn = e.target.closest('.delete-btn');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  const { error } = await client.from('wear_schedule').delete().eq('id', id);
+  if (error) {
+    console.error('Delete error:', JSON.stringify(error));
+    alert('Could not remove this entry.');
+    return;
+  }
+  loadSchedule();
+});
+
+// ── Add to schedule ───────────────────────────────────────────
+document.getElementById('scheduleForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!currentSession) return;
+
+  const statusEl = document.getElementById('scheduleStatus');
+  const submitBtn = document.getElementById('scheduleSubmitBtn');
+  const pantyId = document.getElementById('pantySelect').value;
+  const date = document.getElementById('dateInput').value;
+  const notes = document.getElementById('notesInput').value.trim();
+
+  submitBtn.disabled = true;
+  statusEl.textContent = 'Saving...';
+  statusEl.className = 'form-status';
+
+  const { error } = await client.from('wear_schedule').insert({
+    panty_id: pantyId,
+    schedule_date: date,
+    notes: notes || null,
+    user_id: currentSession.user.id
+  });
+
+  submitBtn.disabled = false;
+
+  if (error) {
+    statusEl.textContent = 'Could not save — this account may not be approved yet.';
+    statusEl.className = 'form-status error';
+    console.error('Insert error:', JSON.stringify(error));
+    return;
+  }
+
+  statusEl.textContent = 'Added!';
+  statusEl.className = 'form-status success';
+  document.getElementById('notesInput').value = '';
+  loadSchedule();
+  setTimeout(() => { statusEl.textContent = ''; }, 2000);
+});
+
+// ── Init ──────────────────────────────────────────────────────
+async function init() {
+  const { data: { session } } = await client.auth.getSession();
+  currentSession = session;
+  renderAuthArea();
+  renderPageState();
+
+  loadPantyOptions();
+  loadSchedule();
+
+  // Default date input to today
+  document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
+
+  client.auth.onAuthStateChange((_event, session) => {
+    currentSession = session;
+    renderAuthArea();
+    renderPageState();
+    loadSchedule();
+  });
+}
+
+init();
+</script>
+</body>
+</html>
