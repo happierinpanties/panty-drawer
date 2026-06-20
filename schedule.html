@@ -860,9 +860,12 @@ document.addEventListener('click', (e) => {
 // ── Schedule list ─────────────────────────────────────────────
 async function loadSchedule() {
   const list = document.getElementById('scheduleList');
+  const todayStr = new Date().toISOString().split('T')[0];
+
   const { data, error } = await client
     .from('wear_schedule')
-    .select(`id, schedule_date, notes, user_id, panties ( id, name, image_url )`)
+    .select(`id, schedule_date, notes, user_id, panties ( id, name, image_url, status )`)
+    .gte('schedule_date', todayStr)
     .order('schedule_date', { ascending: true });
 
   if (error) {
@@ -871,12 +874,15 @@ async function loadSchedule() {
     return;
   }
 
-  if (!data || data.length === 0) {
+  // Exclude entries whose panty is currently in the Dirty hamper
+  const filtered = (data || []).filter(row => row.panties?.status !== 'Dirty');
+
+  if (filtered.length === 0) {
     list.innerHTML = '<div class="empty"><p>Nothing scheduled yet.</p></div>';
     return;
   }
 
-  list.innerHTML = data.map(row => {
+  list.innerHTML = filtered.map(row => {
     const panty = row.panties || {};
     const dateStr = new Date(row.schedule_date + 'T00:00:00').toLocaleDateString(undefined, {
       weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
