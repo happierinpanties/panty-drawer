@@ -219,6 +219,14 @@
       margin-top: 8px;
     }
 
+    .kpi-range {
+      font-size: 11px;
+      font-style: italic;
+      color: var(--stone);
+      margin-top: 6px;
+      letter-spacing: 0.02em;
+    }
+
     /* ── Top 10 Grid ─────────────────────────────────────────── */
     .top-grid {
       display: grid;
@@ -458,6 +466,7 @@
       <div class="kpi-card">
         <div class="kpi-value" id="longestStreak">--</div>
         <div class="kpi-label">Longest Streak</div>
+        <div class="kpi-range" id="longestStreakRange"></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-value" id="totalDaysLogged">--</div>
@@ -466,6 +475,7 @@
       <div class="kpi-card">
         <div class="kpi-value" id="longestGap">--</div>
         <div class="kpi-label">Longest Gap (days)</div>
+        <div class="kpi-range" id="longestGapRange"></div>
       </div>
     </div>
   </div>
@@ -1389,20 +1399,37 @@ async function loadStreaks() {
   const dayMs = 24 * 60 * 60 * 1000;
   const dates = uniqueDays.map(d => new Date(d + 'T00:00:00'));
 
-  // Walk through and find consecutive-day streaks + gaps
+  // Walk through and find consecutive-day streaks + gaps, tracking date ranges
   let longestStreak = 1;
+  let longestStreakStart = dates[0];
+  let longestStreakEnd = dates[0];
+
   let runningStreak = 1;
+  let runningStreakStart = dates[0];
+
   let longestGap = 0;
+  let longestGapStart = null;
+  let longestGapEnd = null;
 
   for (let i = 1; i < dates.length; i++) {
     const diffDays = Math.round((dates[i] - dates[i - 1]) / dayMs);
 
     if (diffDays === 1) {
       runningStreak++;
-      longestStreak = Math.max(longestStreak, runningStreak);
+      if (runningStreak > longestStreak) {
+        longestStreak = runningStreak;
+        longestStreakStart = runningStreakStart;
+        longestStreakEnd = dates[i];
+      }
     } else {
-      longestGap = Math.max(longestGap, diffDays - 1);
+      const gapLength = diffDays - 1;
+      if (gapLength > longestGap) {
+        longestGap = gapLength;
+        longestGapStart = dates[i - 1];
+        longestGapEnd = dates[i];
+      }
       runningStreak = 1;
+      runningStreakStart = dates[i];
     }
   }
 
@@ -1426,10 +1453,24 @@ async function loadStreaks() {
     }
   }
 
+  function formatRangeShort(d) {
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
   document.getElementById('currentStreak').textContent = currentStreak;
   document.getElementById('longestStreak').textContent = longestStreak;
   document.getElementById('totalDaysLogged').textContent = uniqueDays.length;
   document.getElementById('longestGap').textContent = longestGap;
+
+  document.getElementById('longestStreakRange').textContent =
+    longestStreak > 1
+      ? `${formatRangeShort(longestStreakStart)} – ${formatRangeShort(longestStreakEnd)}`
+      : '';
+
+  document.getElementById('longestGapRange').textContent =
+    longestGap > 0
+      ? `${formatRangeShort(longestGapStart)} – ${formatRangeShort(longestGapEnd)}`
+      : '';
 }
 
 /* ---------------------------
