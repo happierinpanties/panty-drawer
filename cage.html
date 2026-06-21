@@ -258,6 +258,146 @@
       color: var(--stone);
     }
 
+    /* ── Auth area ───────────────────────────────────────────── */
+    .auth-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: 8px;
+      padding-left: 16px;
+      border-left: 1px solid var(--border);
+    }
+
+    .auth-email {
+      font-size: 11px;
+      color: var(--stone);
+      letter-spacing: 0.04em;
+    }
+
+    .btn-text {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--rose);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px 10px;
+      transition: color 0.2s;
+    }
+
+    .btn-text:hover { color: var(--plum); }
+
+    /* ── Sign-in card ────────────────────────────────────────── */
+    .signin-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--rose);
+      padding: 32px;
+      text-align: center;
+      max-width: 380px;
+      margin: 0 auto;
+    }
+
+    .signin-card p {
+      font-size: 13px;
+      color: var(--stone);
+      margin-bottom: 18px;
+      line-height: 1.6;
+    }
+
+    .signin-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    input[type="email"] {
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 11px 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      color: var(--ink);
+      background: var(--ivory);
+    }
+
+    input[type="email"]:focus { outline: none; border-color: var(--rose); }
+
+    .btn-primary {
+      background: var(--plum);
+      color: #fff;
+      border: none;
+      border-radius: 2px;
+      padding: 12px 20px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover { background: var(--rose); }
+    .btn-primary:disabled { background: var(--border); cursor: default; }
+
+    .signin-status {
+      font-size: 12px;
+      color: var(--stone);
+      margin-top: 14px;
+      min-height: 16px;
+    }
+
+    .signin-status.success { color: var(--plum); }
+    .signin-status.error { color: #a33; }
+
+    /* ── Session control button ─────────────────────────────── */
+    .control-row {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-control {
+      border: none;
+      border-radius: 2px;
+      padding: 12px 28px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s;
+      color: #fff;
+    }
+
+    .btn-control.start { background: var(--plum); }
+    .btn-control.start:hover { background: var(--rose); }
+    .btn-control.stop { background: #a33; }
+    .btn-control.stop:hover { background: #c44; }
+    .btn-control:disabled { background: var(--border); cursor: default; }
+
+    .control-status {
+      font-size: 12px;
+      color: var(--stone);
+      min-height: 16px;
+    }
+
+    .control-status.error { color: #a33; }
+
+    .locked-note {
+      text-align: center;
+      font-size: 12px;
+      color: var(--stone);
+      margin-top: 12px;
+      font-style: italic;
+    }
+
     /* ── Responsive ──────────────────────────────────────────── */
     @media (max-width: 600px) {
       nav { padding: 0 16px; }
@@ -273,6 +413,7 @@
   <a class="nav-wordmark" href="https://www.panty-drawer.com">The Drawer</a>
   <ul class="nav-links">
     <li><a href="https://www.panty-drawer.com">&#8592; Back to Drawer</a></li>
+    <li class="auth-area" id="authArea"><!-- populated by JS --></li>
   </ul>
 </nav>
 
@@ -282,6 +423,18 @@
 </header>
 
 <div class="content">
+
+  <!-- Signed-out state -->
+  <div class="section" id="signedOutSection" style="display:none;">
+    <div class="signin-card">
+      <p>Sign in to start or stop a session.</p>
+      <form class="signin-form" id="signinForm">
+        <input type="email" id="signinEmail" placeholder="you@example.com" required />
+        <button type="submit" class="btn-primary">Send Magic Link</button>
+      </form>
+      <div class="signin-status" id="signinStatus"></div>
+    </div>
+  </div>
 
   <!-- Status -->
   <div class="section">
@@ -295,6 +448,15 @@
         <div class="label">Current Session</div>
         <div id="timer" class="big" style="font-size:28px; letter-spacing:0.05em;">--:--:--</div>
       </div>
+    </div>
+
+    <!-- Start/Stop control, only visible when signed in -->
+    <div class="control-row" id="signedInControls" style="display:none;">
+      <button class="btn-control start" id="controlBtn">Start Session</button>
+      <span class="control-status" id="controlStatus"></span>
+    </div>
+    <div class="locked-note" id="notAllowedNote" style="display:none;">
+      You're signed in, but this account isn't approved to control sessions.
     </div>
 
     <div class="card center" style="margin-top: 20px;">
@@ -380,6 +542,99 @@ function statBlocks(sessions, totalSeconds) {
     </div>`;
 }
 
+let currentSession = null;
+
+// ── Auth UI rendering ─────────────────────────────────────────
+function renderAuthArea() {
+  const area = document.getElementById('authArea');
+  if (currentSession) {
+    area.innerHTML = `
+      <span class="auth-email">${currentSession.user.email}</span>
+      <button class="btn-text" id="signOutBtn">Sign Out</button>
+    `;
+    document.getElementById('signOutBtn').addEventListener('click', signOut);
+  } else {
+    area.innerHTML = `<a href="#" class="btn-text" id="navSignInLink">Sign In</a>`;
+    document.getElementById('navSignInLink').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('signedOutSection').scrollIntoView({ behavior: 'smooth' });
+    });
+  }
+}
+
+function renderPageAuthState() {
+  document.getElementById('signedOutSection').style.display = currentSession ? 'none' : 'block';
+  document.getElementById('signedInControls').style.display = currentSession ? 'flex' : 'none';
+}
+
+document.getElementById('signinForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('signinEmail').value.trim();
+  const statusEl = document.getElementById('signinStatus');
+  statusEl.textContent = 'Sending...';
+  statusEl.className = 'signin-status';
+
+  const { error } = await client.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href }
+  });
+
+  if (error) {
+    statusEl.textContent = 'Something went wrong. Please try again.';
+    statusEl.className = 'signin-status error';
+    console.error('Sign-in error:', JSON.stringify(error));
+  } else {
+    statusEl.textContent = 'Check your email for a sign-in link.';
+    statusEl.className = 'signin-status success';
+  }
+});
+
+async function signOut() {
+  await client.auth.signOut();
+  currentSession = null;
+  renderAuthArea();
+  renderPageAuthState();
+}
+
+// ── Start/Stop control ─────────────────────────────────────────
+function renderControlButton(isActive) {
+  const btn = document.getElementById('controlBtn');
+  if (isActive) {
+    btn.textContent = 'Stop Session';
+    btn.className = 'btn-control stop';
+  } else {
+    btn.textContent = 'Start Session';
+    btn.className = 'btn-control start';
+  }
+}
+
+document.getElementById('controlBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('controlBtn');
+  const statusEl = document.getElementById('controlStatus');
+  const isActive = document.getElementById('lockStatus').dataset.locked === 'yes';
+
+  btn.disabled = true;
+  statusEl.textContent = '';
+  statusEl.className = 'control-status';
+
+  const rpcCall = isActive
+    ? client.rpc('stop_focus_session')
+    : client.rpc('start_focus_session', { p_note: null });
+
+  const { error } = await rpcCall;
+
+  btn.disabled = false;
+
+  if (error) {
+    statusEl.textContent = 'Could not update the session — this account may not be approved.';
+    statusEl.className = 'control-status error';
+    console.error('Session control error:', JSON.stringify(error));
+    return;
+  }
+
+  await loadStatus();
+});
+
 async function loadStatus() {
   const { data } = await client
     .from('focus_sessions')
@@ -389,7 +644,9 @@ async function loadStatus() {
     .limit(1);
 
   const el = document.getElementById('lockStatus');
-  if (data.length > 0) {
+  const isActive = data.length > 0;
+
+  if (isActive) {
     el.innerText = 'Yes';
     el.dataset.locked = 'yes';
     const started = new Date(data[0].start_time);
@@ -402,6 +659,8 @@ async function loadStatus() {
     el.dataset.locked = 'no';
     document.getElementById('timer').innerText = '--:--:--';
   }
+
+  renderControlButton(isActive);
 }
 
 async function loadWeekStats() {
@@ -512,12 +771,27 @@ async function loadCurrentPanty() {
   }
 }
 
-loadStatus();
-loadCurrentPanty();
-loadWeekStats();
-loadMonthStats();
-loadTop10();
-loadMonthlySummary();
+async function init() {
+  const { data: { session } } = await client.auth.getSession();
+  currentSession = session;
+  renderAuthArea();
+  renderPageAuthState();
+
+  await loadStatus();
+  loadCurrentPanty();
+  loadWeekStats();
+  loadMonthStats();
+  loadTop10();
+  loadMonthlySummary();
+
+  client.auth.onAuthStateChange((_event, session) => {
+    currentSession = session;
+    renderAuthArea();
+    renderPageAuthState();
+  });
+}
+
+init();
 </script>
 </body>
 </html>
