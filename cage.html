@@ -580,7 +580,13 @@ document.getElementById('signinForm').addEventListener('submit', async (e) => {
   });
 
   if (error) {
-    statusEl.textContent = 'Something went wrong. Please try again.';
+    if (error.code === 'over_email_send_rate_limit' || error.status === 429) {
+      statusEl.textContent = 'Too many attempts right now — please try again in a bit.';
+    } else {
+      // Generic on purpose: covers allowlist rejection and any other failure
+      // without revealing whether the email is approved or not.
+      statusEl.textContent = 'Something went wrong. Please try again.';
+    }
     statusEl.className = 'signin-status error';
     console.error('Sign-in error:', JSON.stringify(error));
   } else {
