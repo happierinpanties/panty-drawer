@@ -460,6 +460,52 @@
       color: var(--stone);
     }
 
+    /* ── KPI Cards ───────────────────────────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 20px;
+    }
+
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--rose);
+      padding: 24px 20px;
+      text-align: center;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(107,58,69,0.09);
+    }
+
+    .kpi-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 36px;
+      font-weight: 400;
+      color: var(--plum);
+      line-height: 1;
+    }
+
+    .kpi-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--stone);
+      margin-top: 8px;
+    }
+
+    .kpi-range {
+      font-size: 11px;
+      font-style: italic;
+      color: var(--stone);
+      margin-top: 6px;
+      letter-spacing: 0.02em;
+    }
+
     /* ── Panty picker ────────────────────────────────────────── */
     .picker-wrap {
       background: var(--card-bg);
@@ -614,6 +660,30 @@
 </header>
 
 <div class="content">
+
+  <!-- KPIs — visible to everyone, read-only -->
+  <div class="section">
+    <div class="section-title">At a Glance</div>
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-value" id="adherencePct">--</div>
+        <div class="kpi-label">Adherence</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value" id="totalScheduled">--</div>
+        <div class="kpi-label">Total Scheduled</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value" id="mostScheduledColor">--</div>
+        <div class="kpi-label">Most Scheduled Color</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value" id="longestScheduleStreak">--</div>
+        <div class="kpi-label">Longest Streak</div>
+        <div class="kpi-range" id="longestScheduleStreakRange"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- Signed-out state -->
   <div class="section" id="signedOutSection" style="display:none;">
@@ -970,6 +1040,109 @@ document.getElementById('scheduleForm').addEventListener('submit', async (e) => 
 });
 
 // ── Init ──────────────────────────────────────────────────────
+/* ---------------------------
+   Schedule KPIs
+--------------------------- */
+
+async function loadScheduleKPIs() {
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const [scheduleRes, historyRes] = await Promise.all([
+    client.from('wear_schedule')
+      .select('panty_id, schedule_date, panties ( color )')
+      .order('schedule_date', { ascending: true }),
+    client.from('wear_history')
+      .select('panty_id, worn_at'),
+  ]);
+
+  if (scheduleRes.error) {
+    console.error('Schedule KPI error:', JSON.stringify(scheduleRes.error));
+    return;
+  }
+  if (historyRes.error) {
+    console.error('Wear history KPI error:', JSON.stringify(historyRes.error));
+    return;
+  }
+
+  const allSchedule = scheduleRes.data || [];
+  const history = historyRes.data || [];
+
+  // Build a lookup of actual wears: "pantyId|date" -> true
+  const wornSet = new Set(history.map(h => `${h.panty_id}|${h.worn_at}`));
+
+  // ── Total Scheduled (all-time count) ──────────────────────
+  document.getElementById('totalScheduled').textContent = allSchedule.length;
+
+  // ── Adherence % (past entries only — can't adhere to the future yet) ──
+  const pastSchedule = allSchedule.filter(row => row.schedule_date < todayStr);
+  let adherenceText = '--';
+  if (pastSchedule.length > 0) {
+    const matched = pastSchedule.filter(row =>
+      wornSet.has(`${row.panty_id}|${row.schedule_date}`)
+    ).length;
+    const pct = Math.round((matched / pastSchedule.length) * 100);
+    adherenceText = `${pct}%`;
+  }
+  document.getElementById('adherencePct').textContent = adherenceText;
+
+  // ── Most Scheduled Color (all-time, regardless of past/future) ──
+  const colorCounts = {};
+  allSchedule.forEach(row => {
+    const color = row.panties?.color;
+    if (color) colorCounts[color] = (colorCounts[color] || 0) + 1;
+  });
+  const topColor = Object.entries(colorCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '--';
+  document.getElementById('mostScheduledColor').textContent = topColor;
+
+  // ── Longest Streak of consecutive followed-through scheduled days ──
+  // A day "counts" if it was scheduled AND actually worn as planned (adherence match).
+  const followedDays = [...new Set(
+    pastSchedule
+      .filter(row => wornSet.has(`${row.panty_id}|${row.schedule_date}`))
+      .map(row => row.schedule_date)
+  )].sort();
+
+  if (followedDays.length === 0) {
+    document.getElementById('longestScheduleStreak').textContent = '0';
+    document.getElementById('longestScheduleStreakRange').textContent = '';
+    return;
+  }
+
+  const dayMs = 24 * 60 * 60 * 1000;
+  const dates = followedDays.map(d => new Date(d + 'T00:00:00'));
+
+  let longestStreak = 1;
+  let longestStreakStart = dates[0];
+  let longestStreakEnd = dates[0];
+  let runningStreak = 1;
+  let runningStreakStart = dates[0];
+
+  for (let i = 1; i < dates.length; i++) {
+    const diffDays = Math.round((dates[i] - dates[i - 1]) / dayMs);
+    if (diffDays === 1) {
+      runningStreak++;
+      if (runningStreak > longestStreak) {
+        longestStreak = runningStreak;
+        longestStreakStart = runningStreakStart;
+        longestStreakEnd = dates[i];
+      }
+    } else {
+      runningStreak = 1;
+      runningStreakStart = dates[i];
+    }
+  }
+
+  function formatRangeShort(d) {
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  document.getElementById('longestScheduleStreak').textContent = longestStreak;
+  document.getElementById('longestScheduleStreakRange').textContent =
+    longestStreak > 1
+      ? `${formatRangeShort(longestStreakStart)} – ${formatRangeShort(longestStreakEnd)}`
+      : '';
+}
+
 async function init() {
   const { data: { session } } = await client.auth.getSession();
   currentSession = session;
@@ -978,6 +1151,7 @@ async function init() {
 
   loadPantyPicker();
   loadSchedule();
+  loadScheduleKPIs();
 
   // Default date input to today
   document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
