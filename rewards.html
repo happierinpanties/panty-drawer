@@ -1349,10 +1349,18 @@ document.getElementById('addTaskForm').addEventListener('submit', async e => {
   statusEl.textContent = 'Saving...';
   statusEl.className = 'form-status';
 
+  const pointsVal = parseInt(document.getElementById('taskPoints').value);
+  if (!document.getElementById('taskTitle').value.trim() || isNaN(pointsVal) || pointsVal < 1) {
+    statusEl.textContent = 'Please fill in a title and a valid points value.';
+    statusEl.className = 'form-status error';
+    btn.disabled = false;
+    return;
+  }
+
   const { error } = await client.from('reward_tasks').insert({
     title:       document.getElementById('taskTitle').value.trim(),
     description: document.getElementById('taskDesc').value.trim() || null,
-    points:      parseInt(document.getElementById('taskPoints').value),
+    points:      pointsVal,
     start_date:  document.getElementById('taskStartDate').value,
     end_date:    document.getElementById('taskEndDate').value || null,
     is_active:   true,
@@ -1403,10 +1411,25 @@ document.getElementById('addRuleForm').addEventListener('submit', async e => {
   };
 
   if (type === 'hours_per_point') {
-    payload.hours_per_point = parseFloat(document.getElementById('ruleHoursPerPoint').value);
+    const hpp = parseFloat(document.getElementById('ruleHoursPerPoint').value);
+    if (isNaN(hpp) || hpp <= 0) {
+      statusEl.textContent = 'Please enter a valid hours per point value.';
+      statusEl.className = 'form-status error';
+      btn.disabled = false;
+      return;
+    }
+    payload.hours_per_point = hpp;
   } else {
-    payload.goal_hours   = parseFloat(document.getElementById('ruleGoalHours').value);
-    payload.bonus_points = parseInt(document.getElementById('ruleBonusPoints').value);
+    const gh = parseFloat(document.getElementById('ruleGoalHours').value);
+    const bp = parseInt(document.getElementById('ruleBonusPoints').value);
+    if (isNaN(gh) || gh <= 0 || isNaN(bp) || bp < 1) {
+      statusEl.textContent = 'Please enter valid goal hours and bonus points.';
+      statusEl.className = 'form-status error';
+      btn.disabled = false;
+      return;
+    }
+    payload.goal_hours   = gh;
+    payload.bonus_points = bp;
   }
 
   const { error } = await client.from('focus_point_rules').insert(payload);
