@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rewards</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --blush:   #f5e8e4;
+      --rose:    #c9847a;
+      --plum:    #6b3a45;
+      --ivory:   #fdf8f6;
+      --stone:   #8a7570;
+      --ink:     #2e1f22;
+      --border:  #e8d8d3;
+      --card-bg: #ffffff;
+      --nav-h:   64px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--ivory);
+      color: var(--ink);
+      font-weight: 300;
+    }
+
+    /* ── Nav ─────────────────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(253,248,246,0.96);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      height: var(--nav-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+    }
+
+    .nav-wordmark {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      color: var(--plum);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      list-style: none;
+    }
+
+    .nav-links > li > a {
+      display: flex;
+      align-items: center;
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--stone);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-links > li > a:hover { color: var(--plum); }
+
+    .auth-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: 8px;
+      padding-left: 16px;
+      border-left: 1px solid var(--border);
+    }
+
+    .auth-email {
+      font-size: 11px;
+      color: var(--stone);
+      letter-spacing: 0.04em;
+    }
+
+    .btn-text {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--rose);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px 10px;
+      transition: color 0.2s;
+    }
+
+    .btn-text:hover { color: var(--plum); }
+
+    /* ── Page Header ─────────────────────────────────────────── */
+    .page-header {
+      text-align: center;
+      padding: 56px 24px 40px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .page-header .eyebrow {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--rose);
+      margin-bottom: 14px;
+    }
+
+    .page-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(34px, 5vw, 52px);
+      font-weight: 400;
+      color: var(--plum);
+      line-height: 1.15;
+    }
+
+    .page-header h1 em { font-style: italic; }
+
+    /* ── Layout ──────────────────────────────────────────────── */
+    .content {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 40px 32px 80px;
+    }
+
+    .section { margin-top: 48px; }
+    .section:first-child { margin-top: 0; }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--plum);
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    /* ── KPI Cards ───────────────────────────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 20px;
+    }
+
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--rose);
+      padding: 24px 20px;
+      text-align: center;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(107,58,69,0.09);
+    }
+
+    .kpi-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 36px;
+      font-weight: 400;
+      color: var(--plum);
+      line-height: 1;
+    }
+
+    .kpi-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--stone);
+      margin-top: 8px;
+    }
+
+    /* ── Focus Rule Cards ────────────────────────────────────── */
+    .rule-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .rule-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--rose);
+      padding: 20px 24px;
+    }
+
+    .rule-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .rule-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      color: var(--plum);
+    }
+
+    .rule-points {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      color: var(--plum);
+      white-space: nowrap;
+    }
+
+    .rule-points span {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--stone);
+      margin-left: 4px;
+    }
+
+    .rule-desc {
+      font-size: 12px;
+      color: var(--stone);
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+
+    .rule-meta {
+      font-size: 11px;
+      color: var(--stone);
+      letter-spacing: 0.04em;
+    }
+
+    /* Progress bar */
+    .progress-wrap {
+      margin-top: 12px;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--stone);
+      margin-bottom: 6px;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: var(--blush);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--rose);
+      border-radius: 3px;
+      transition: width 0.4s ease;
+    }
+
+    .progress-fill.complete { background: var(--plum); }
+
+    /* ── Task Cards ──────────────────────────────────────────── */
+    .task-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .task-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .task-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(107,58,69,0.09);
+    }
+
+    .task-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 15px;
+      color: var(--plum);
+    }
+
+    .task-points-badge {
+      display: inline-flex;
+      align-items: center;
+      background: var(--blush);
+      border: 1px solid var(--rose);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--plum);
+      letter-spacing: 0.04em;
+      width: fit-content;
+    }
+
+    .task-desc {
+      font-size: 12px;
+      color: var(--stone);
+      line-height: 1.5;
+      flex: 1;
+    }
+
+    .task-dates {
+      font-size: 10px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--stone);
+    }
+
+    .btn-log {
+      margin-top: 4px;
+      background: var(--plum);
+      color: #fff;
+      border: none;
+      border-radius: 2px;
+      padding: 9px 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-log:hover { background: var(--rose); }
+    .btn-log:disabled { background: var(--border); cursor: default; }
+
+    .task-status {
+      font-size: 11px;
+      color: var(--stone);
+      min-height: 14px;
+      font-style: italic;
+    }
+
+    .task-status.success { color: var(--plum); }
+    .task-status.error { color: #a33; }
+
+    /* ── Log list ─────────────────────────────────────────────── */
+    .log-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .log-row {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .log-date {
+      font-family: 'Playfair Display', serif;
+      font-size: 14px;
+      color: var(--plum);
+      white-space: nowrap;
+      min-width: 80px;
+    }
+
+    .log-main { flex: 1; min-width: 0; }
+
+    .log-task {
+      font-size: 13px;
+      color: var(--ink);
+    }
+
+    .log-notes {
+      font-size: 11px;
+      font-style: italic;
+      color: var(--stone);
+      margin-top: 2px;
+    }
+
+    .log-pts {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      color: var(--plum);
+      white-space: nowrap;
+    }
+
+    .log-pts span {
+      font-family: 'Inter', sans-serif;
+      font-size: 10px;
+      color: var(--stone);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .delete-btn {
+      flex-shrink: 0;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 5px 9px;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--stone);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .delete-btn:hover { background: #a33; border-color: #a33; color: #fff; }
+
+    /* ── Sign-in card ────────────────────────────────────────── */
+    .signin-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--rose);
+      padding: 32px;
+      text-align: center;
+      max-width: 380px;
+      margin: 0 auto;
+    }
+
+    .signin-card p {
+      font-size: 13px;
+      color: var(--stone);
+      margin-bottom: 18px;
+      line-height: 1.6;
+    }
+
+    .signin-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    input[type="email"], textarea {
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 10px 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      color: var(--ink);
+      background: var(--ivory);
+    }
+
+    input[type="email"]:focus,
+    textarea:focus { outline: none; border-color: var(--rose); }
+
+    textarea { resize: vertical; min-height: 52px; }
+
+    .btn-primary {
+      background: var(--plum);
+      color: #fff;
+      border: none;
+      border-radius: 2px;
+      padding: 12px 20px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover { background: var(--rose); }
+
+    .signin-status {
+      font-size: 12px;
+      color: var(--stone);
+      margin-top: 12px;
+      min-height: 16px;
+    }
+
+    .signin-status.success { color: var(--plum); }
+    .signin-status.error { color: #a33; }
+
+    /* ── Notes modal ─────────────────────────────────────────── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(46,31,34,0.4);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--rose);
+      padding: 28px;
+      width: 100%;
+      max-width: 380px;
+      margin: 16px;
+    }
+
+    .modal h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      color: var(--plum);
+      margin-bottom: 16px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .btn-secondary {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 10px 16px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--stone);
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .btn-secondary:hover { border-color: var(--rose); color: var(--plum); }
+
+    /* ── Empty ───────────────────────────────────────────────── */
+    .empty {
+      text-align: center;
+      padding: 32px 24px;
+      color: var(--stone);
+      font-style: italic;
+      font-size: 13px;
+    }
+
+    /* ── Footer ──────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 32px;
+      text-align: center;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--stone);
+    }
+
+    /* ── Management forms ───────────────────────────────────── */
+    .mgmt-section {
+      display: none;
+    }
+
+    .mgmt-section.visible { display: block; }
+
+    .form-grid {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: end;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.full { grid-column: 1 / -1; }
+
+    .form-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--stone);
+    }
+
+    .form-input, .form-select, .form-textarea {
+      appearance: none;
+      -webkit-appearance: none;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 9px 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      color: var(--ink);
+      background: var(--ivory);
+    }
+
+    .form-select {
+      background: var(--ivory) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a7570'/%3E%3C/svg%3E") no-repeat right 12px center;
+      padding-right: 32px;
+      cursor: pointer;
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus { outline: none; border-color: var(--rose); }
+
+    .form-textarea { resize: vertical; min-height: 60px; font-family: 'Inter', sans-serif; }
+
+    .form-submit-row {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .form-status {
+      font-size: 12px;
+      color: var(--stone);
+    }
+
+    .form-status.success { color: var(--plum); }
+    .form-status.error { color: #a33; }
+
+    /* Conditional field hiding */
+    .conditional { display: none; }
+    .conditional.visible { display: contents; }
+
+    /* Existing items list in management */
+    .mgmt-list {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .mgmt-row {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mgmt-row-main { flex: 1; min-width: 0; }
+
+    .mgmt-row-title {
+      font-size: 13px;
+      color: var(--ink);
+      font-weight: 500;
+    }
+
+    .mgmt-row-meta {
+      font-size: 11px;
+      color: var(--stone);
+      margin-top: 2px;
+      letter-spacing: 0.03em;
+    }
+
+    .toggle-btn {
+      flex-shrink: 0;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 5px 10px;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .toggle-btn.active { border-color: var(--plum); color: var(--plum); }
+    .toggle-btn.inactive { border-color: var(--stone); color: var(--stone); }
+    .toggle-btn:hover { background: var(--blush); }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      nav { padding: 0 16px; }
+      .content { padding: 24px 16px 60px; }
+      .task-grid { grid-template-columns: 1fr; }
+      .log-row { flex-wrap: wrap; }
+      .auth-email { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-wordmark" href="https://www.panty-drawer.com">The Drawer</a>
+  <ul class="nav-links">
+    <li><a href="https://www.panty-drawer.com">&#8592; Back to Drawer</a></li>
+    <li class="auth-area" id="authArea"><!-- populated by JS --></li>
+  </ul>
+</nav>
+
+<header class="page-header">
+  <p class="eyebrow">Points &amp; Progress</p>
+  <h1>My <em>Rewards</em></h1>
+</header>
+
+<div class="content">
+
+  <!-- Monthly KPIs — always visible -->
+  <div class="section">
+    <div class="section-title">This Month</div>
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-value" id="totalPoints">--</div>
+        <div class="kpi-label">Total Points</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value" id="taskPoints">--</div>
+        <div class="kpi-label">From Tasks</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value" id="focusPoints">--</div>
+        <div class="kpi-label">From Lock Time</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value" id="daysLeft">--</div>
+        <div class="kpi-label">Days Left</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Focus Point Rules — always visible -->
+  <div class="section">
+    <div class="section-title">Lock Time Rules</div>
+    <div class="rule-grid" id="ruleGrid">
+      <div class="empty">No active rules this month.</div>
+    </div>
+  </div>
+
+  <!-- Active Tasks — always visible, log button gated by auth -->
+  <div class="section">
+    <div class="section-title">Active Tasks</div>
+    <div class="task-grid" id="taskGrid">
+      <div class="empty">No active tasks right now.</div>
+    </div>
+  </div>
+
+  <!-- This Month's Log — always visible -->
+  <div class="section">
+    <div class="section-title">This Month's Log</div>
+    <div class="log-list" id="logList">
+      <div class="empty">Nothing logged yet this month.</div>
+    </div>
+  </div>
+
+  <!-- Management: Add Task — signed in allowed users only -->
+  <div class="section mgmt-section" id="mgmtTaskSection">
+    <div class="section-title">Add Task</div>
+    <form class="form-grid" id="addTaskForm">
+      <div class="form-group full">
+        <label class="form-label">Title</label>
+        <input class="form-input" type="text" id="taskTitle" placeholder="e.g. Wear matching set" required />
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Description <span style="text-transform:none;font-weight:300">(optional)</span></label>
+        <textarea class="form-textarea" id="taskDesc" rows="2" placeholder="Any details about this task..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Points</label>
+        <input class="form-input" type="number" id="taskPoints" min="1" placeholder="e.g. 5" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Start Date</label>
+        <input class="form-input" type="date" id="taskStartDate" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">End Date <span style="text-transform:none;font-weight:300">(optional)</span></label>
+        <input class="form-input" type="date" id="taskEndDate" />
+      </div>
+      <div class="form-submit-row">
+        <button type="submit" class="btn-primary" id="addTaskBtn">Add Task</button>
+        <span class="form-status" id="addTaskStatus"></span>
+      </div>
+    </form>
+
+    <div class="mgmt-list" id="allTasksList"></div>
+  </div>
+
+  <!-- Management: Add Focus Rule — signed in allowed users only -->
+  <div class="section mgmt-section" id="mgmtRuleSection">
+    <div class="section-title">Add Focus Rule</div>
+    <form class="form-grid" id="addRuleForm">
+      <div class="form-group full">
+        <label class="form-label">Title</label>
+        <input class="form-input" type="text" id="ruleTitle" placeholder="e.g. Monthly lock goal" required />
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Description <span style="text-transform:none;font-weight:300">(optional)</span></label>
+        <textarea class="form-textarea" id="ruleDesc" rows="2" placeholder="Any details about this rule..."></textarea>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Rule Type</label>
+        <select class="form-select" id="ruleType">
+          <option value="hours_per_point">Hours per Point</option>
+          <option value="calendar_month_goal_bonus">Monthly Goal Bonus</option>
+          <option value="daily_goal_bonus">Daily Goal Bonus</option>
+        </select>
+      </div>
+
+      <!-- hours_per_point fields -->
+      <div class="conditional" id="fieldsHoursPerPoint">
+        <div class="form-group">
+          <label class="form-label">Hours per Point</label>
+          <input class="form-input" type="number" id="ruleHoursPerPoint" min="0.1" step="0.1" placeholder="e.g. 3.5" />
+        </div>
+      </div>
+
+      <!-- goal bonus fields (shared between both goal types) -->
+      <div class="conditional" id="fieldsGoalBonus">
+        <div class="form-group">
+          <label class="form-label">Goal Hours</label>
+          <input class="form-input" type="number" id="ruleGoalHours" min="0.1" step="0.1" placeholder="e.g. 10" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Bonus Points</label>
+          <input class="form-input" type="number" id="ruleBonusPoints" min="1" placeholder="e.g. 20" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Start Date</label>
+        <input class="form-input" type="date" id="ruleStartDate" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">End Date</label>
+        <input class="form-input" type="date" id="ruleEndDate" required />
+      </div>
+      <div class="form-submit-row">
+        <button type="submit" class="btn-primary" id="addRuleBtn">Add Rule</button>
+        <span class="form-status" id="addRuleStatus"></span>
+      </div>
+    </form>
+
+    <div class="mgmt-list" id="allRulesList"></div>
+  </div>
+
+  <!-- Sign-in — only shown when signed out -->
+  <div class="section" id="signedOutSection" style="display:none;">
+    <div class="signin-card">
+      <p>Sign in to log task completions.</p>
+      <form class="signin-form" id="signinForm">
+        <input type="email" id="signinEmail" placeholder="you@example.com" required />
+        <button type="submit" class="btn-primary">Send Magic Link</button>
+      </form>
+      <div class="signin-status" id="signinStatus"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Notes modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle">Log Completion</h3>
+    <textarea id="modalNotes" placeholder="Optional notes about this completion..." rows="3"></textarea>
+    <div class="modal-actions">
+      <button class="btn-primary" id="modalConfirm">Confirm</button>
+      <button class="btn-secondary" id="modalCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  &copy; The Drawer &nbsp;&middot;&nbsp; Rewards
+</footer>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const client = createClient(
+  'https://rkocfrsaeeyxgfdxeiqz.supabase.co',
+  'sb_publishable_yp7myP1S5wmYLQrgwNWxhg_IfZHdeZj'
+);
+
+let currentSession = null;
+let pendingTaskId = null;
+let pendingTaskTitle = null;
+
+// ── Date helpers ──────────────────────────────────────────────
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+const todayStr = today.toISOString().split('T')[0];
+
+const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+const monthEnd   = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+const monthStartStr = monthStart.toISOString().split('T')[0];
+const monthEndStr   = monthEnd.toISOString().split('T')[0];
+
+const daysLeft = monthEnd.getDate() - today.getDate() + 1;
+
+function fmtDate(d) {
+  return new Date(d + 'T00:00:00').toLocaleDateString(undefined, {
+    month: 'short', day: 'numeric'
+  });
+}
+
+// ── Auth ──────────────────────────────────────────────────────
+function renderAuthArea() {
+  const area = document.getElementById('authArea');
+  if (currentSession) {
+    area.innerHTML = `
+      <span class="auth-email">${currentSession.user.email}</span>
+      <button class="btn-text" id="signOutBtn">Sign Out</button>`;
+    document.getElementById('signOutBtn').addEventListener('click', signOut);
+  } else {
+    area.innerHTML = `<a href="#" class="btn-text" id="navSignInLink">Sign In</a>`;
+    document.getElementById('navSignInLink').addEventListener('click', e => {
+      e.preventDefault();
+      document.getElementById('signedOutSection').scrollIntoView({ behavior: 'smooth' });
+    });
+  }
+}
+
+function renderPageAuthState() {
+  document.getElementById('signedOutSection').style.display = currentSession ? 'none' : 'block';
+  renderMgmtSections();
+  loadTasks();
+}
+
+document.getElementById('signinForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = document.getElementById('signinEmail').value.trim();
+  const statusEl = document.getElementById('signinStatus');
+  statusEl.textContent = 'Sending...';
+  statusEl.className = 'signin-status';
+
+  const { error } = await client.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href }
+  });
+
+  if (error) {
+    if (error.code === 'over_email_send_rate_limit' || error.status === 429) {
+      statusEl.textContent = 'Too many attempts right now — please try again in a bit.';
+    } else {
+      statusEl.textContent = 'Something went wrong. Please try again.';
+    }
+    statusEl.className = 'signin-status error';
+    console.error('Sign-in error:', JSON.stringify(error));
+  } else {
+    statusEl.textContent = 'Check your email for a sign-in link.';
+    statusEl.className = 'signin-status success';
+  }
+});
+
+async function signOut() {
+  await client.auth.signOut();
+  currentSession = null;
+  renderAuthArea();
+  renderPageAuthState();
+}
+
+// ── Monthly KPIs ──────────────────────────────────────────────
+async function loadKPIs() {
+  document.getElementById('daysLeft').textContent = daysLeft;
+
+  const [completionsRes, focusRes, tasksRes, rulesRes] = await Promise.all([
+    client.from('reward_completions')
+      .select('task_id, completed_date, reward_tasks(points)')
+      .gte('completed_date', monthStartStr)
+      .lte('completed_date', monthEndStr),
+    client.from('focus_sessions')
+      .select('start_time, end_time')
+      .gte('start_time', monthStart.toISOString())
+      .lte('start_time', new Date(monthEnd.getFullYear(), monthEnd.getMonth() + 1, 0, 23, 59, 59).toISOString())
+      .not('end_time', 'is', null),
+    client.from('reward_tasks').select('id, points'),
+    client.from('focus_point_rules')
+      .select('*')
+      .eq('is_active', true)
+      .lte('start_date', monthEndStr)
+      .gte('end_date', monthStartStr),
+  ]);
+
+  // Task points this month
+  let taskPts = 0;
+  (completionsRes.data || []).forEach(c => {
+    taskPts += c.reward_tasks?.points || 0;
+  });
+
+  // Focus points this month
+  const focusPts = calcFocusPoints(rulesRes.data || [], focusRes.data || []);
+
+  document.getElementById('taskPoints').textContent = taskPts;
+  document.getElementById('focusPoints').textContent = focusPts;
+  document.getElementById('totalPoints').textContent = taskPts + focusPts;
+}
+
+// ── Focus point calculation ───────────────────────────────────
+function calcFocusPoints(rules, sessions) {
+  let total = 0;
+
+  rules.forEach(rule => {
+    // Filter sessions to rule's date window
+    const windowSessions = sessions.filter(s => {
+      const d = s.start_time.split('T')[0];
+      return d >= rule.start_date && d <= rule.end_date;
+    });
+
+    if (rule.rule_type === 'hours_per_point') {
+      const totalHours = windowSessions.reduce((sum, s) => {
+        return sum + (new Date(s.end_time) - new Date(s.start_time)) / 3600000;
+      }, 0);
+      total += Math.floor(totalHours / rule.hours_per_point);
+
+    } else if (rule.rule_type === 'calendar_month_goal_bonus') {
+      const totalHours = windowSessions.reduce((sum, s) => {
+        return sum + (new Date(s.end_time) - new Date(s.start_time)) / 3600000;
+      }, 0);
+      if (totalHours >= rule.goal_hours) total += rule.bonus_points;
+
+    } else if (rule.rule_type === 'daily_goal_bonus') {
+      // Group sessions by day
+      const byDay = {};
+      windowSessions.forEach(s => {
+        const day = s.start_time.split('T')[0];
+        byDay[day] = (byDay[day] || 0) + (new Date(s.end_time) - new Date(s.start_time)) / 3600000;
+      });
+      Object.values(byDay).forEach(hours => {
+        if (hours >= rule.goal_hours) total += rule.bonus_points;
+      });
+    }
+  });
+
+  return total;
+}
+
+// ── Focus Point Rules section ─────────────────────────────────
+async function loadRules() {
+  const [rulesRes, focusRes] = await Promise.all([
+    client.from('focus_point_rules')
+      .select('*')
+      .eq('is_active', true)
+      .lte('start_date', todayStr)
+      .gte('end_date', todayStr)
+      .order('start_date', { ascending: false }),
+    client.from('focus_sessions')
+      .select('start_time, end_time')
+      .not('end_time', 'is', null),
+  ]);
+
+  const grid = document.getElementById('ruleGrid');
+  const rules = rulesRes.data || [];
+
+  if (rules.length === 0) {
+    grid.innerHTML = '<div class="empty">No active rules right now.</div>';
+    return;
+  }
+
+  grid.innerHTML = rules.map(rule => {
+    const windowSessions = (focusRes.data || []).filter(s => {
+      const d = s.start_time.split('T')[0];
+      return d >= rule.start_date && d <= rule.end_date;
+    });
+
+    let pointsEarned = 0;
+    let progressHtml = '';
+
+    if (rule.rule_type === 'hours_per_point') {
+      const totalHours = windowSessions.reduce((sum, s) =>
+        sum + (new Date(s.end_time) - new Date(s.start_time)) / 3600000, 0);
+      pointsEarned = Math.floor(totalHours / rule.hours_per_point);
+      const nextThreshold = (pointsEarned + 1) * rule.hours_per_point;
+      const progressPct = Math.min(100, ((totalHours % rule.hours_per_point) / rule.hours_per_point) * 100);
+      progressHtml = `
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span>${totalHours.toFixed(1)}h logged</span>
+            <span>${rule.hours_per_point}h per point</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill${progressPct >= 100 ? ' complete' : ''}"
+                 style="width:${progressPct}%"></div>
+          </div>
+        </div>`;
+
+    } else if (rule.rule_type === 'calendar_month_goal_bonus') {
+      const totalHours = windowSessions.reduce((sum, s) =>
+        sum + (new Date(s.end_time) - new Date(s.start_time)) / 3600000, 0);
+      pointsEarned = totalHours >= rule.goal_hours ? rule.bonus_points : 0;
+      const progressPct = Math.min(100, (totalHours / rule.goal_hours) * 100);
+      progressHtml = `
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span>${totalHours.toFixed(1)}h of ${rule.goal_hours}h goal</span>
+            <span>${progressPct >= 100 ? '✓ Bonus earned' : `${(rule.goal_hours - totalHours).toFixed(1)}h remaining`}</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill${progressPct >= 100 ? ' complete' : ''}"
+                 style="width:${progressPct}%"></div>
+          </div>
+        </div>`;
+
+    } else if (rule.rule_type === 'daily_goal_bonus') {
+      const byDay = {};
+      windowSessions.forEach(s => {
+        const day = s.start_time.split('T')[0];
+        byDay[day] = (byDay[day] || 0) + (new Date(s.end_time) - new Date(s.start_time)) / 3600000;
+      });
+      const qualifyingDays = Object.values(byDay).filter(h => h >= rule.goal_hours).length;
+      pointsEarned = qualifyingDays * rule.bonus_points;
+      const todayHours = byDay[todayStr] || 0;
+      const todayPct = Math.min(100, (todayHours / rule.goal_hours) * 100);
+      progressHtml = `
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span>${qualifyingDays} qualifying ${qualifyingDays === 1 ? 'day' : 'days'} · today ${todayHours.toFixed(1)}h of ${rule.goal_hours}h</span>
+            <span>${rule.bonus_points} pts/day</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill${todayPct >= 100 ? ' complete' : ''}"
+                 style="width:${todayPct}%"></div>
+          </div>
+        </div>`;
+    }
+
+    const typeLabel = {
+      hours_per_point: 'Per Hour',
+      calendar_month_goal_bonus: 'Monthly Goal',
+      daily_goal_bonus: 'Daily Goal'
+    }[rule.rule_type] || rule.rule_type;
+
+    return `
+      <div class="rule-card">
+        <div class="rule-header">
+          <div>
+            <div class="rule-title">${rule.title}</div>
+            ${rule.description ? `<div class="rule-desc">${rule.description}</div>` : ''}
+            <div class="rule-meta">${typeLabel} &nbsp;·&nbsp; ${fmtDate(rule.start_date)} – ${fmtDate(rule.end_date)}</div>
+          </div>
+          <div class="rule-points">${pointsEarned}<span>pts</span></div>
+        </div>
+        ${progressHtml}
+      </div>`;
+  }).join('');
+}
+
+// ── Active Tasks ──────────────────────────────────────────────
+async function loadTasks() {
+  const { data, error } = await client
+    .from('reward_tasks')
+    .select('*')
+    .eq('is_active', true)
+    .lte('start_date', todayStr)
+    .or(`end_date.is.null,end_date.gte.${todayStr}`)
+    .order('start_date', { ascending: false });
+
+  const grid = document.getElementById('taskGrid');
+
+  if (error) {
+    console.error('Tasks error:', JSON.stringify(error));
+    grid.innerHTML = '<div class="empty">Could not load tasks.</div>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    grid.innerHTML = '<div class="empty">No active tasks right now.</div>';
+    return;
+  }
+
+  grid.innerHTML = data.map(task => {
+    const dateRange = task.end_date
+      ? `${fmtDate(task.start_date)} – ${fmtDate(task.end_date)}`
+      : `From ${fmtDate(task.start_date)}`;
+
+    const logBtn = currentSession
+      ? `<button class="btn-log" data-id="${task.id}" data-title="${task.title.replace(/"/g,'&quot;')}">Log Completion</button>
+         <div class="task-status" id="taskStatus-${task.id}"></div>`
+      : `<div class="task-status">Sign in to log completions</div>`;
+
+    return `
+      <div class="task-card">
+        <div class="task-title">${task.title}</div>
+        <div class="task-points-badge">+${task.points} ${task.points === 1 ? 'point' : 'points'}</div>
+        ${task.description ? `<div class="task-desc">${task.description}</div>` : ''}
+        <div class="task-dates">${dateRange}</div>
+        ${logBtn}
+      </div>`;
+  }).join('');
+}
+
+// ── Log button → modal ────────────────────────────────────────
+document.getElementById('taskGrid').addEventListener('click', e => {
+  const btn = e.target.closest('.btn-log');
+  if (!btn || !currentSession) return;
+  pendingTaskId = btn.dataset.id;
+  pendingTaskTitle = btn.dataset.title;
+  document.getElementById('modalTitle').textContent = `Log: ${pendingTaskTitle}`;
+  document.getElementById('modalNotes').value = '';
+  document.getElementById('modalOverlay').classList.add('open');
+});
+
+document.getElementById('modalCancel').addEventListener('click', () => {
+  document.getElementById('modalOverlay').classList.remove('open');
+  pendingTaskId = null;
+});
+
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalOverlay')) {
+    document.getElementById('modalOverlay').classList.remove('open');
+    pendingTaskId = null;
+  }
+});
+
+document.getElementById('modalConfirm').addEventListener('click', async () => {
+  if (!pendingTaskId || !currentSession) return;
+
+  const confirmBtn = document.getElementById('modalConfirm');
+  const notes = document.getElementById('modalNotes').value.trim();
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = 'Saving...';
+
+  const { error } = await client.from('reward_completions').insert({
+    task_id: pendingTaskId,
+    completed_date: todayStr,
+    notes: notes || null,
+    logged_by: currentSession.user.id
+  });
+
+  confirmBtn.disabled = false;
+  confirmBtn.textContent = 'Confirm';
+  document.getElementById('modalOverlay').classList.remove('open');
+
+  const statusEl = document.getElementById(`taskStatus-${pendingTaskId}`);
+
+  if (error) {
+    console.error('Log error:', JSON.stringify(error));
+    if (statusEl) { statusEl.textContent = 'Could not log — not approved.'; statusEl.className = 'task-status error'; }
+  } else {
+    if (statusEl) { statusEl.textContent = 'Logged!'; statusEl.className = 'task-status success';
+      setTimeout(() => { statusEl.textContent = ''; statusEl.className = 'task-status'; }, 2000);
+    }
+    loadLog();
+    loadKPIs();
+  }
+
+  pendingTaskId = null;
+});
+
+// ── This Month's Log ──────────────────────────────────────────
+async function loadLog() {
+  const { data, error } = await client
+    .from('reward_completions')
+    .select('id, completed_date, notes, logged_by, reward_tasks(title, points)')
+    .gte('completed_date', monthStartStr)
+    .lte('completed_date', monthEndStr)
+    .order('completed_date', { ascending: false });
+
+  const list = document.getElementById('logList');
+
+  if (error) {
+    console.error('Log error:', JSON.stringify(error));
+    list.innerHTML = '<div class="empty">Could not load log.</div>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.innerHTML = '<div class="empty">Nothing logged yet this month.</div>';
+    return;
+  }
+
+  list.innerHTML = data.map(row => {
+    const isOwn = currentSession && row.logged_by === currentSession.user.id;
+    return `
+      <div class="log-row">
+        <div class="log-date">${fmtDate(row.completed_date)}</div>
+        <div class="log-main">
+          <div class="log-task">${row.reward_tasks?.title || 'Unknown task'}</div>
+          ${row.notes ? `<div class="log-notes">${row.notes}</div>` : ''}
+        </div>
+        <div class="log-pts">+${row.reward_tasks?.points || 0}<span>pts</span></div>
+        ${isOwn ? `<button class="delete-btn" data-id="${row.id}">Remove</button>` : ''}
+      </div>`;
+  }).join('');
+}
+
+document.getElementById('logList').addEventListener('click', async e => {
+  const btn = e.target.closest('.delete-btn');
+  if (!btn || !currentSession) return;
+  const { error } = await client.from('reward_completions').delete().eq('id', btn.dataset.id);
+  if (error) { console.error('Delete error:', JSON.stringify(error)); return; }
+  loadLog();
+  loadKPIs();
+});
+
+// ── Management UI visibility ──────────────────────────────────
+function renderMgmtSections() {
+  const visible = !!currentSession;
+  document.querySelectorAll('.mgmt-section').forEach(el => {
+    el.classList.toggle('visible', visible);
+  });
+  if (visible) {
+    loadAllTasks();
+    loadAllRules();
+  }
+}
+
+// ── Rule type conditional fields ──────────────────────────────
+function updateRuleFields() {
+  const type = document.getElementById('ruleType').value;
+  document.getElementById('fieldsHoursPerPoint').classList.toggle('visible', type === 'hours_per_point');
+  document.getElementById('fieldsGoalBonus').classList.toggle('visible',
+    type === 'calendar_month_goal_bonus' || type === 'daily_goal_bonus');
+}
+
+document.getElementById('ruleType').addEventListener('change', updateRuleFields);
+updateRuleFields(); // set initial state
+
+// Default start date to today for both forms
+document.getElementById('taskStartDate').value = todayStr;
+document.getElementById('ruleStartDate').value = todayStr;
+
+// ── Add Task form ─────────────────────────────────────────────
+document.getElementById('addTaskForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!currentSession) return;
+
+  const btn = document.getElementById('addTaskBtn');
+  const statusEl = document.getElementById('addTaskStatus');
+  btn.disabled = true;
+  statusEl.textContent = 'Saving...';
+  statusEl.className = 'form-status';
+
+  const { error } = await client.from('reward_tasks').insert({
+    title:       document.getElementById('taskTitle').value.trim(),
+    description: document.getElementById('taskDesc').value.trim() || null,
+    points:      parseInt(document.getElementById('taskPoints').value),
+    start_date:  document.getElementById('taskStartDate').value,
+    end_date:    document.getElementById('taskEndDate').value || null,
+    is_active:   true,
+    created_by:  currentSession.user.id,
+  });
+
+  btn.disabled = false;
+
+  if (error) {
+    statusEl.textContent = 'Could not save task.';
+    statusEl.className = 'form-status error';
+    console.error('Add task error:', JSON.stringify(error));
+    return;
+  }
+
+  statusEl.textContent = 'Task added!';
+  statusEl.className = 'form-status success';
+  document.getElementById('addTaskForm').reset();
+  document.getElementById('taskStartDate').value = todayStr;
+  setTimeout(() => { statusEl.textContent = ''; }, 2000);
+  loadTasks();
+  loadAllTasks();
+});
+
+// ── Add Focus Rule form ───────────────────────────────────────
+document.getElementById('addRuleForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!currentSession) return;
+
+  const btn = document.getElementById('addRuleBtn');
+  const statusEl = document.getElementById('addRuleStatus');
+  const type = document.getElementById('ruleType').value;
+  btn.disabled = true;
+  statusEl.textContent = 'Saving...';
+  statusEl.className = 'form-status';
+
+  const payload = {
+    title:       document.getElementById('ruleTitle').value.trim(),
+    description: document.getElementById('ruleDesc').value.trim() || null,
+    rule_type:   type,
+    start_date:  document.getElementById('ruleStartDate').value,
+    end_date:    document.getElementById('ruleEndDate').value,
+    is_active:   true,
+    created_by:  currentSession.user.id,
+    hours_per_point: null,
+    goal_hours:      null,
+    bonus_points:    null,
+  };
+
+  if (type === 'hours_per_point') {
+    payload.hours_per_point = parseFloat(document.getElementById('ruleHoursPerPoint').value);
+  } else {
+    payload.goal_hours   = parseFloat(document.getElementById('ruleGoalHours').value);
+    payload.bonus_points = parseInt(document.getElementById('ruleBonusPoints').value);
+  }
+
+  const { error } = await client.from('focus_point_rules').insert(payload);
+
+  btn.disabled = false;
+
+  if (error) {
+    statusEl.textContent = 'Could not save rule.';
+    statusEl.className = 'form-status error';
+    console.error('Add rule error:', JSON.stringify(error));
+    return;
+  }
+
+  statusEl.textContent = 'Rule added!';
+  statusEl.className = 'form-status success';
+  document.getElementById('addRuleForm').reset();
+  document.getElementById('ruleStartDate').value = todayStr;
+  updateRuleFields();
+  setTimeout(() => { statusEl.textContent = ''; }, 2000);
+  loadRules();
+  loadKPIs();
+  loadAllRules();
+});
+
+// ── All tasks list (management) ───────────────────────────────
+async function loadAllTasks() {
+  const { data, error } = await client
+    .from('reward_tasks')
+    .select('id, title, points, start_date, end_date, is_active')
+    .order('start_date', { ascending: false });
+
+  const list = document.getElementById('allTasksList');
+  if (error || !data || data.length === 0) {
+    list.innerHTML = '';
+    return;
+  }
+
+  list.innerHTML = '<div style="font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--stone);margin-bottom:8px;">All Tasks</div>' +
+    data.map(t => {
+      const dates = t.end_date
+        ? `${fmtDate(t.start_date)} – ${fmtDate(t.end_date)}`
+        : `From ${fmtDate(t.start_date)}`;
+      return `
+        <div class="mgmt-row">
+          <div class="mgmt-row-main">
+            <div class="mgmt-row-title">${t.title}</div>
+            <div class="mgmt-row-meta">${t.points} pts &nbsp;·&nbsp; ${dates}</div>
+          </div>
+          <button class="toggle-btn ${t.is_active ? 'active' : 'inactive'}"
+                  data-id="${t.id}" data-table="reward_tasks" data-active="${t.is_active}">
+            ${t.is_active ? 'Active' : 'Inactive'}
+          </button>
+          <button class="delete-btn" data-id="${t.id}" data-table="reward_tasks">Delete</button>
+        </div>`;
+    }).join('');
+}
+
+// ── All rules list (management) ───────────────────────────────
+async function loadAllRules() {
+  const { data, error } = await client
+    .from('focus_point_rules')
+    .select('id, title, rule_type, start_date, end_date, is_active, hours_per_point, goal_hours, bonus_points')
+    .order('start_date', { ascending: false });
+
+  const list = document.getElementById('allRulesList');
+  if (error || !data || data.length === 0) {
+    list.innerHTML = '';
+    return;
+  }
+
+  const typeLabel = {
+    hours_per_point: 'Per Hour',
+    calendar_month_goal_bonus: 'Monthly Goal',
+    daily_goal_bonus: 'Daily Goal'
+  };
+
+  list.innerHTML = '<div style="font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--stone);margin-bottom:8px;">All Rules</div>' +
+    data.map(r => {
+      let detail = '';
+      if (r.rule_type === 'hours_per_point') detail = `${r.hours_per_point}h per point`;
+      else detail = `${r.goal_hours}h goal · ${r.bonus_points} pts bonus`;
+
+      return `
+        <div class="mgmt-row">
+          <div class="mgmt-row-main">
+            <div class="mgmt-row-title">${r.title}</div>
+            <div class="mgmt-row-meta">${typeLabel[r.rule_type]} &nbsp;·&nbsp; ${detail} &nbsp;·&nbsp; ${fmtDate(r.start_date)} – ${fmtDate(r.end_date)}</div>
+          </div>
+          <button class="toggle-btn ${r.is_active ? 'active' : 'inactive'}"
+                  data-id="${r.id}" data-table="focus_point_rules" data-active="${r.is_active}">
+            ${r.is_active ? 'Active' : 'Inactive'}
+          </button>
+          <button class="delete-btn" data-id="${r.id}" data-table="focus_point_rules">Delete</button>
+        </div>`;
+    }).join('');
+}
+
+// ── Toggle active / delete for management rows ─────────────────
+document.addEventListener('click', async e => {
+  const toggleBtn = e.target.closest('.toggle-btn[data-table]');
+  if (toggleBtn && currentSession) {
+    const { id, table } = toggleBtn.dataset;
+    const isActive = toggleBtn.dataset.active === 'true';
+    const { error } = await client.from(table).update({ is_active: !isActive }).eq('id', id);
+    if (error) { console.error('Toggle error:', JSON.stringify(error)); return; }
+    table === 'reward_tasks' ? (loadAllTasks(), loadTasks()) : (loadAllRules(), loadRules(), loadKPIs());
+    return;
+  }
+
+  const deleteBtn = e.target.closest('.delete-btn[data-table]');
+  if (deleteBtn && currentSession) {
+    const { id, table } = deleteBtn.dataset;
+    if (!confirm('Delete this entry? This cannot be undone.')) return;
+    const { error } = await client.from(table).delete().eq('id', id);
+    if (error) { console.error('Delete error:', JSON.stringify(error)); return; }
+    table === 'reward_tasks' ? (loadAllTasks(), loadTasks()) : (loadAllRules(), loadRules(), loadKPIs());
+  }
+});
+
+// ── Init ──────────────────────────────────────────────────────
+async function init() {
+  const { data: { session } } = await client.auth.getSession();
+  currentSession = session;
+  renderAuthArea();
+  renderPageAuthState();
+
+  loadKPIs();
+  loadRules();
+  loadTasks();
+  loadLog();
+  renderMgmtSections();
+
+  client.auth.onAuthStateChange((_event, session) => {
+    currentSession = session;
+    renderAuthArea();
+    renderPageAuthState();
+    loadLog();
+  });
+}
+
+init();
+</script>
+</body>
+</html>
