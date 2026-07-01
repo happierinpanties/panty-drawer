@@ -785,7 +785,7 @@
       </div>
       <div class="form-group">
         <label class="form-label">Points</label>
-        <input class="form-input" type="number" id="taskPoints" min="1" placeholder="e.g. 5" required />
+        <input class="form-input" type="number" id="taskPointsInput" min="1" placeholder="e.g. 5" required />
       </div>
       <div class="form-group">
         <label class="form-label">Start Date</label>
@@ -1349,7 +1349,7 @@ document.getElementById('addTaskForm').addEventListener('submit', async e => {
   statusEl.textContent = 'Saving...';
   statusEl.className = 'form-status';
 
-  const pointsVal = parseInt(document.getElementById('taskPoints').value);
+  const pointsVal = parseInt(document.getElementById('taskPointsInput').value, 10);
   if (!document.getElementById('taskTitle').value.trim() || isNaN(pointsVal) || pointsVal < 1) {
     statusEl.textContent = 'Please fill in a title and a valid points value.';
     statusEl.className = 'form-status error';
