@@ -1075,6 +1075,7 @@ async function loadScheduleKPIs() {
 
   // ── Adherence % (past entries only — can't adhere to the future yet) ──
   const pastSchedule = allSchedule.filter(row => row.schedule_date < todayStr);
+  const scheduleThroughToday = allSchedule.filter(row => row.schedule_date <= todayStr);
   let adherenceText = '--';
   if (pastSchedule.length > 0) {
     const matched = pastSchedule.filter(row =>
@@ -1097,7 +1098,7 @@ async function loadScheduleKPIs() {
   // ── Longest Streak of consecutive followed-through scheduled days ──
   // A day "counts" if it was scheduled AND actually worn as planned (adherence match).
   const followedDays = [...new Set(
-    pastSchedule
+    scheduleThroughToday
       .filter(row => wornSet.has(`${row.panty_id}|${row.schedule_date}`))
       .map(row => row.schedule_date)
   )].sort();
