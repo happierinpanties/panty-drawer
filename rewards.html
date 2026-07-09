@@ -732,6 +732,10 @@
         <div class="kpi-value" id="totalPoints">--</div>
         <div class="kpi-label">Total Points</div>
       </div>
+<div class="kpi-card">
+  <div class="kpi-value" id="availableBalance">--</div>
+  <div class="kpi-label">Available Balance</div>
+</div>
       <div class="kpi-card">
         <div class="kpi-value" id="taskPoints">--</div>
         <div class="kpi-label">From Tasks</div>
@@ -762,7 +766,13 @@
       <div class="empty">No active tasks right now.</div>
     </div>
   </div>
-
+<!-- Rewards — always visible, redeem button gated by auth + balance -->
+<div class="section">
+  <div class="section-title">Rewards</div>
+  <div class="task-grid" id="rewardGrid">
+    <div class="empty">No rewards available right now.</div>
+  </div>
+</div>
   <!-- This Month's Log — always visible -->
   <div class="section">
     <div class="section-title">This Month's Log</div>
@@ -770,7 +780,13 @@
       <div class="empty">Nothing logged yet this month.</div>
     </div>
   </div>
-
+<!-- Redemption History — always visible -->
+<div class="section">
+  <div class="section-title">Redemption History</div>
+  <div class="log-list" id="redemptionList">
+    <div class="empty">Nothing redeemed yet this month.</div>
+  </div>
+</div>
   <!-- Management: Add Task — signed in allowed users only -->
   <div class="section mgmt-section" id="mgmtTaskSection">
     <div class="section-title">Add Task</div>
@@ -861,6 +877,45 @@
 
     <div class="mgmt-list" id="allRulesList"></div>
   </div>
+<!-- Management: Add Reward — signed in allowed users only -->
+<div class="section mgmt-section" id="mgmtRewardSection">
+  <div class="section-title">Add Reward</div>
+  <form class="form-grid" id="addRewardForm">
+    <div class="form-group full">
+      <label class="form-label">Name</label>
+      <input class="form-input" type="text" id="rewardName" placeholder="e.g. Movie night pick" required />
+    </div>
+    <div class="form-group full">
+      <label class="form-label">Description <span style="text-transform:none;font-weight:300">(optional)</span></label>
+      <textarea class="form-textarea" id="rewardDesc" rows="2" placeholder="Any details about this reward..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Points Required</label>
+      <input class="form-input" type="number" id="rewardPointsInput" min="1" placeholder="e.g. 20" required />
+    </div>
+    <div class="form-group">
+      <label class="form-label" style="visibility:hidden;">Repeatable</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);padding:9px 0;">
+        <input type="checkbox" id="rewardRepeatable" checked />
+        Repeatable
+      </label>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Start Date</label>
+      <input class="form-input" type="date" id="rewardStartDate" required />
+    </div>
+    <div class="form-group">
+      <label class="form-label">End Date <span style="text-transform:none;font-weight:300">(optional)</span></label>
+      <input class="form-input" type="date" id="rewardEndDate" />
+    </div>
+    <div class="form-submit-row">
+      <button type="submit" class="btn-primary" id="addRewardBtn">Add Reward</button>
+      <span class="form-status" id="addRewardStatus"></span>
+    </div>
+  </form>
+
+  <div class="mgmt-list" id="allRewardsList"></div>
+</div>
 
   <!-- Sign-in — only shown when signed out -->
   <div class="section" id="signedOutSection" style="display:none;">
@@ -903,6 +958,10 @@ const client = createClient(
 let currentSession = null;
 let pendingTaskId = null;
 let pendingTaskTitle = null;
+let pendingType = null; // 'task' | 'reward'
+let pendingRewardId = null;
+let pendingRewardPoints = null;
+let availableBalance = 0;
 
 // ── Date helpers ──────────────────────────────────────────────
 const today = new Date();
@@ -982,7 +1041,9 @@ async function signOut() {
 async function loadKPIs() {
   document.getElementById('daysLeft').textContent = daysLeft;
 
-  const [completionsRes, focusRes, tasksRes, rulesRes] = await Promise.all([
+  const monthEndTimestamp = new Date(monthEnd.getFullYear(), monthEnd.getMonth(), monthEnd.getDate(), 23, 59, 59).toISOString();
+
+  const [completionsRes, focusRes, tasksRes, rulesRes, redemptionsRes] = await Promise.all([
     client.from('reward_completions')
       .select('task_id, completed_date, reward_tasks(points)')
       .gte('completed_date', monthStartStr)
@@ -998,20 +1059,27 @@ async function loadKPIs() {
       .eq('is_active', true)
       .lte('start_date', monthEndStr)
       .gte('end_date', monthStartStr),
+    client.from('redemptions')
+      .select('points_spent')
+      .eq('status', 'completed')
+      .gte('redeemed_at', monthStart.toISOString())
+      .lte('redeemed_at', monthEndTimestamp),
   ]);
 
-  // Task points this month
   let taskPts = 0;
   (completionsRes.data || []).forEach(c => {
     taskPts += c.reward_tasks?.points || 0;
   });
 
-  // Focus points this month
   const focusPts = calcFocusPoints(rulesRes.data || [], focusRes.data || []);
+  const totalPts = taskPts + focusPts;
+  const spentPts = (redemptionsRes.data || []).reduce((sum, r) => sum + r.points_spent, 0);
+  availableBalance = totalPts - spentPts;
 
   document.getElementById('taskPoints').textContent = taskPts;
   document.getElementById('focusPoints').textContent = focusPts;
-  document.getElementById('totalPoints').textContent = taskPts + focusPts;
+  document.getElementById('totalPoints').textContent = totalPts;
+  document.getElementById('availableBalance').textContent = availableBalance;
 }
 
 // ── Focus point calculation ───────────────────────────────────
@@ -1207,10 +1275,72 @@ async function loadTasks() {
   }).join('');
 }
 
+// ── Rewards ──────────────────────────────────────────────────
+async function loadRewards() {
+  await loadKPIs(); // ensure availableBalance is current before rendering afford/deny states
+
+  const [rewardsRes, redeemedRes] = await Promise.all([
+    client.from('rewards')
+      .select('*')
+      .eq('is_active', true)
+      .lte('eligible_start', todayStr)
+      .or(`eligible_end.is.null,eligible_end.gte.${todayStr}`)
+      .order('eligible_start', { ascending: false }),
+    client.from('redemptions').select('reward_id').eq('status', 'completed'),
+  ]);
+
+  const grid = document.getElementById('rewardGrid');
+
+  if (rewardsRes.error) {
+    console.error('Rewards error:', JSON.stringify(rewardsRes.error));
+    grid.innerHTML = '<div class="empty">Could not load rewards.</div>';
+    return;
+  }
+
+  const data = rewardsRes.data || [];
+  if (data.length === 0) {
+    grid.innerHTML = '<div class="empty">No rewards available right now.</div>';
+    return;
+  }
+
+  const redeemedRewardIds = new Set((redeemedRes.data || []).map(r => r.reward_id));
+
+  grid.innerHTML = data.map(reward => {
+    const dateRange = reward.eligible_end
+      ? `${fmtDate(reward.eligible_start)} – ${fmtDate(reward.eligible_end)}`
+      : `From ${fmtDate(reward.eligible_start)}`;
+
+    const alreadyRedeemed = !reward.is_repeatable && redeemedRewardIds.has(reward.id);
+    const canAfford = availableBalance >= reward.points_required;
+
+    let actionHtml;
+    if (!currentSession) {
+      actionHtml = `<div class="task-status">Sign in to redeem</div>`;
+    } else if (alreadyRedeemed) {
+      actionHtml = `<div class="task-status">Already redeemed</div>`;
+    } else if (!canAfford) {
+      actionHtml = `<div class="task-status">Not enough points</div>`;
+    } else {
+      actionHtml = `<button class="btn-log" data-id="${reward.id}" data-name="${reward.name.replace(/"/g,'&quot;')}" data-points="${reward.points_required}">Redeem</button>
+        <div class="task-status" id="rewardStatus-${reward.id}"></div>`;
+    }
+
+    return `
+      <div class="task-card">
+        <div class="task-title">${reward.name}</div>
+        <div class="task-points-badge">${reward.points_required} ${reward.points_required === 1 ? 'point' : 'points'}</div>
+        ${reward.description ? `<div class="task-desc">${reward.description}</div>` : ''}
+        <div class="task-dates">${dateRange}</div>
+        ${actionHtml}
+      </div>`;
+  }).join('');
+}
+
 // ── Log button → modal ────────────────────────────────────────
 document.getElementById('taskGrid').addEventListener('click', e => {
   const btn = e.target.closest('.btn-log');
   if (!btn || !currentSession) return;
+  pendingType = 'task';
   pendingTaskId = btn.dataset.id;
   pendingTaskTitle = btn.dataset.title;
   document.getElementById('modalTitle').textContent = `Log: ${pendingTaskTitle}`;
@@ -1218,52 +1348,96 @@ document.getElementById('taskGrid').addEventListener('click', e => {
   document.getElementById('modalOverlay').classList.add('open');
 });
 
+document.getElementById('rewardGrid').addEventListener('click', e => {
+  const btn = e.target.closest('.btn-log');
+  if (!btn || !currentSession) return;
+  pendingType = 'reward';
+  pendingRewardId = btn.dataset.id;
+  pendingRewardPoints = parseInt(btn.dataset.points, 10);
+  document.getElementById('modalTitle').textContent = `Redeem: ${btn.dataset.name}`;
+  document.getElementById('modalNotes').value = '';
+  document.getElementById('modalOverlay').classList.add('open');
+});
 document.getElementById('modalCancel').addEventListener('click', () => {
   document.getElementById('modalOverlay').classList.remove('open');
   pendingTaskId = null;
+  pendingRewardId = null;
+  pendingType = null;
 });
 
 document.getElementById('modalOverlay').addEventListener('click', e => {
   if (e.target === document.getElementById('modalOverlay')) {
     document.getElementById('modalOverlay').classList.remove('open');
     pendingTaskId = null;
+    pendingRewardId = null;
+    pendingType = null;
   }
 });
 
 document.getElementById('modalConfirm').addEventListener('click', async () => {
-  if (!pendingTaskId || !currentSession) return;
+  if (!currentSession) return;
+  if (pendingType === 'task' && !pendingTaskId) return;
+  if (pendingType === 'reward' && !pendingRewardId) return;
 
   const confirmBtn = document.getElementById('modalConfirm');
   const notes = document.getElementById('modalNotes').value.trim();
   confirmBtn.disabled = true;
   confirmBtn.textContent = 'Saving...';
 
-  const { error } = await client.from('reward_completions').insert({
-    task_id: pendingTaskId,
-    completed_date: todayStr,
-    notes: notes || null,
-    logged_by: currentSession.user.id
-  });
+  if (pendingType === 'task') {
+    const { error } = await client.from('reward_completions').insert({
+      task_id: pendingTaskId,
+      completed_date: todayStr,
+      notes: notes || null,
+      logged_by: currentSession.user.id
+    });
+
+    const statusEl = document.getElementById(`taskStatus-${pendingTaskId}`);
+    if (error) {
+      console.error('Log error:', JSON.stringify(error));
+      if (statusEl) { statusEl.textContent = 'Could not log — not approved.'; statusEl.className = 'task-status error'; }
+    } else {
+      if (statusEl) {
+        statusEl.textContent = 'Logged!'; statusEl.className = 'task-status success';
+        setTimeout(() => { statusEl.textContent = ''; statusEl.className = 'task-status'; }, 2000);
+      }
+      loadLog();
+      loadKPIs();
+    }
+
+  } else if (pendingType === 'reward') {
+    if (availableBalance < pendingRewardPoints) {
+      const statusEl = document.getElementById(`rewardStatus-${pendingRewardId}`);
+      if (statusEl) { statusEl.textContent = 'Not enough points.'; statusEl.className = 'task-status error'; }
+    } else {
+      const { error } = await client.from('redemptions').insert({
+        reward_id: pendingRewardId,
+        points_spent: pendingRewardPoints,
+        status: 'completed',
+        redeemed_by: currentSession.user.id,
+        notes: notes || null
+      });
+
+      const statusEl = document.getElementById(`rewardStatus-${pendingRewardId}`);
+      if (error) {
+        console.error('Redeem error:', JSON.stringify(error));
+        if (statusEl) { statusEl.textContent = 'Could not redeem.'; statusEl.className = 'task-status error'; }
+      } else {
+        if (statusEl) { statusEl.textContent = 'Redeemed!'; statusEl.className = 'task-status success'; }
+        loadRedemptionList();
+        setTimeout(() => { loadRewards(); }, 1500); // delay so "Redeemed!" is visible before the card refreshes
+      }
+    }
+  }
 
   confirmBtn.disabled = false;
   confirmBtn.textContent = 'Confirm';
   document.getElementById('modalOverlay').classList.remove('open');
-
-  const statusEl = document.getElementById(`taskStatus-${pendingTaskId}`);
-
-  if (error) {
-    console.error('Log error:', JSON.stringify(error));
-    if (statusEl) { statusEl.textContent = 'Could not log — not approved.'; statusEl.className = 'task-status error'; }
-  } else {
-    if (statusEl) { statusEl.textContent = 'Logged!'; statusEl.className = 'task-status success';
-      setTimeout(() => { statusEl.textContent = ''; statusEl.className = 'task-status'; }, 2000);
-    }
-    loadLog();
-    loadKPIs();
-  }
-
   pendingTaskId = null;
+  pendingRewardId = null;
+  pendingType = null;
 });
+
 
 // ── This Month's Log ──────────────────────────────────────────
 async function loadLog() {
@@ -1302,6 +1476,57 @@ async function loadLog() {
   }).join('');
 }
 
+// ── Redemption History ──────────────────────────────────────────
+async function loadRedemptionList() {
+  const monthEndTimestamp = new Date(monthEnd.getFullYear(), monthEnd.getMonth(), monthEnd.getDate(), 23, 59, 59).toISOString();
+
+  const { data, error } = await client
+    .from('redemptions')
+    .select('id, points_spent, redeemed_at, notes, redeemed_by, rewards(name)')
+    .eq('status', 'completed')
+    .gte('redeemed_at', monthStart.toISOString())
+    .lte('redeemed_at', monthEndTimestamp)
+    .order('redeemed_at', { ascending: false });
+
+  const list = document.getElementById('redemptionList');
+
+  if (error) {
+    console.error('Redemption list error:', JSON.stringify(error));
+    list.innerHTML = '<div class="empty">Could not load redemption history.</div>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.innerHTML = '<div class="empty">Nothing redeemed yet this month.</div>';
+    return;
+  }
+
+  list.innerHTML = data.map(row => {
+    const isOwn = currentSession && row.redeemed_by === currentSession.user.id;
+    const dateOnly = row.redeemed_at.split('T')[0];
+    return `
+      <div class="log-row">
+        <div class="log-date">${fmtDate(dateOnly)}</div>
+        <div class="log-main">
+          <div class="log-task">${row.rewards?.name || 'Unknown reward'}</div>
+          ${row.notes ? `<div class="log-notes">${row.notes}</div>` : ''}
+        </div>
+        <div class="log-pts">-${row.points_spent}<span>pts</span></div>
+        ${isOwn ? `<button class="delete-btn" data-id="${row.id}">Remove</button>` : ''}
+      </div>`;
+  }).join('');
+}
+
+document.getElementById('redemptionList').addEventListener('click', async e => {
+  const btn = e.target.closest('.delete-btn');
+  if (!btn || !currentSession) return;
+  const { error } = await client.from('redemptions').delete().eq('id', btn.dataset.id);
+  if (error) { console.error('Delete error:', JSON.stringify(error)); return; }
+  loadRedemptionList();
+  loadKPIs();
+  loadRewards();
+});
+
 document.getElementById('logList').addEventListener('click', async e => {
   const btn = e.target.closest('.delete-btn');
   if (!btn || !currentSession) return;
@@ -1320,6 +1545,7 @@ function renderMgmtSections() {
   if (visible) {
     loadAllTasks();
     loadAllRules();
+    loadAllRewards();
   }
 }
 
@@ -1383,6 +1609,55 @@ document.getElementById('addTaskForm').addEventListener('submit', async e => {
   setTimeout(() => { statusEl.textContent = ''; }, 2000);
   loadTasks();
   loadAllTasks();
+});
+
+document.getElementById('rewardStartDate').value = todayStr;
+
+document.getElementById('addRewardForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!currentSession) return;
+
+  const btn = document.getElementById('addRewardBtn');
+  const statusEl = document.getElementById('addRewardStatus');
+  btn.disabled = true;
+  statusEl.textContent = 'Saving...';
+  statusEl.className = 'form-status';
+
+  const pointsVal = parseInt(document.getElementById('rewardPointsInput').value, 10);
+  if (!document.getElementById('rewardName').value.trim() || isNaN(pointsVal) || pointsVal < 1) {
+    statusEl.textContent = 'Please fill in a name and a valid points value.';
+    statusEl.className = 'form-status error';
+    btn.disabled = false;
+    return;
+  }
+
+  const { error } = await client.from('rewards').insert({
+    name:            document.getElementById('rewardName').value.trim(),
+    description:     document.getElementById('rewardDesc').value.trim() || null,
+    points_required: pointsVal,
+    is_repeatable:   document.getElementById('rewardRepeatable').checked,
+    eligible_start:  document.getElementById('rewardStartDate').value,
+    eligible_end:    document.getElementById('rewardEndDate').value || null,
+    is_active:       true,
+  });
+
+  btn.disabled = false;
+
+  if (error) {
+    statusEl.textContent = 'Could not save reward.';
+    statusEl.className = 'form-status error';
+    console.error('Add reward error:', JSON.stringify(error));
+    return;
+  }
+
+  statusEl.textContent = 'Reward added!';
+  statusEl.className = 'form-status success';
+  document.getElementById('addRewardForm').reset();
+  document.getElementById('rewardStartDate').value = todayStr;
+  document.getElementById('rewardRepeatable').checked = true;
+  setTimeout(() => { statusEl.textContent = ''; }, 2000);
+  loadRewards();
+  loadAllRewards();
 });
 
 // ── Add Focus Rule form ───────────────────────────────────────
@@ -1487,6 +1762,38 @@ async function loadAllTasks() {
     }).join('');
 }
 
+async function loadAllRewards() {
+  const { data, error } = await client
+    .from('rewards')
+    .select('id, name, points_required, is_repeatable, eligible_start, eligible_end, is_active')
+    .order('eligible_start', { ascending: false });
+
+  const list = document.getElementById('allRewardsList');
+  if (error || !data || data.length === 0) {
+    list.innerHTML = '';
+    return;
+  }
+
+  list.innerHTML = '<div style="font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--stone);margin-bottom:8px;">All Rewards</div>' +
+    data.map(r => {
+      const dates = r.eligible_end
+        ? `${fmtDate(r.eligible_start)} – ${fmtDate(r.eligible_end)}`
+        : `From ${fmtDate(r.eligible_start)}`;
+      return `
+        <div class="mgmt-row">
+          <div class="mgmt-row-main">
+            <div class="mgmt-row-title">${r.name}</div>
+            <div class="mgmt-row-meta">${r.points_required} pts &nbsp;·&nbsp; ${r.is_repeatable ? 'Repeatable' : 'One-time'} &nbsp;·&nbsp; ${dates}</div>
+          </div>
+          <button class="toggle-btn ${r.is_active ? 'active' : 'inactive'}"
+                  data-id="${r.id}" data-table="rewards" data-active="${r.is_active}">
+            ${r.is_active ? 'Active' : 'Inactive'}
+          </button>
+          <button class="delete-btn" data-id="${r.id}" data-table="rewards">Delete</button>
+        </div>`;
+    }).join('');
+}
+
 // ── All rules list (management) ───────────────────────────────
 async function loadAllRules() {
   const { data, error } = await client
@@ -1535,7 +1842,9 @@ document.addEventListener('click', async e => {
     const isActive = toggleBtn.dataset.active === 'true';
     const { error } = await client.from(table).update({ is_active: !isActive }).eq('id', id);
     if (error) { console.error('Toggle error:', JSON.stringify(error)); return; }
-    table === 'reward_tasks' ? (loadAllTasks(), loadTasks()) : (loadAllRules(), loadRules(), loadKPIs());
+    if (table === 'reward_tasks') { loadAllTasks(); loadTasks(); }
+    else if (table === 'focus_point_rules') { loadAllRules(); loadRules(); loadKPIs(); }
+    else if (table === 'rewards') { loadAllRewards(); loadRewards(); }
     return;
   }
 
@@ -1545,7 +1854,9 @@ document.addEventListener('click', async e => {
     if (!confirm('Delete this entry? This cannot be undone.')) return;
     const { error } = await client.from(table).delete().eq('id', id);
     if (error) { console.error('Delete error:', JSON.stringify(error)); return; }
-    table === 'reward_tasks' ? (loadAllTasks(), loadTasks()) : (loadAllRules(), loadRules(), loadKPIs());
+    if (table === 'reward_tasks') { loadAllTasks(); loadTasks(); }
+    else if (table === 'focus_point_rules') { loadAllRules(); loadRules(); loadKPIs(); }
+    else if (table === 'rewards') { loadAllRewards(); loadRewards(); }
   }
 });
 
@@ -1560,6 +1871,8 @@ async function init() {
   loadRules();
   loadTasks();
   loadLog();
+  loadRewards();
+  loadRedemptionList();
   renderMgmtSections();
 
   client.auth.onAuthStateChange((_event, session) => {
@@ -1567,6 +1880,8 @@ async function init() {
     renderAuthArea();
     renderPageAuthState();
     loadLog();
+    loadRewards();
+    loadRedemptionList();
   });
 }
 
