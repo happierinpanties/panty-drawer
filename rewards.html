@@ -838,6 +838,7 @@
           <option value="hours_per_point">Hours per Point</option>
           <option value="calendar_month_goal_bonus">Monthly Goal Bonus</option>
           <option value="daily_goal_bonus">Daily Goal Bonus</option>
+          <option value="hourly_threshold_bonus">Hourly Threshold Bonus</option>
         </select>
       </div>
 
@@ -852,11 +853,11 @@
       <!-- goal bonus fields (shared between both goal types) -->
       <div class="conditional" id="fieldsGoalBonus">
         <div class="form-group">
-          <label class="form-label">Goal Hours</label>
+          <label class="form-label" id="ruleGoalHoursLabel">Goal Hours</label>
           <input class="form-input" type="number" id="ruleGoalHours" min="0.1" step="0.1" placeholder="e.g. 10" />
         </div>
         <div class="form-group">
-          <label class="form-label">Bonus Points</label>
+          <label class="form-label" id="ruleBonusPointsLabel">Bonus Points</label>
           <input class="form-input" type="number" id="ruleBonusPoints" min="1" placeholder="e.g. 20" />
         </div>
       </div>
@@ -1115,6 +1116,13 @@ function calcFocusPoints(rules, sessions) {
       Object.values(byDay).forEach(hours => {
         if (hours >= rule.goal_hours) total += rule.bonus_points;
       });
+
+    } else if (rule.rule_type === 'hourly_threshold_bonus') {
+      const totalHours = windowSessions.reduce((sum, s) => {
+        return sum + (new Date(s.end_time) - new Date(s.start_time)) / 3600000;
+      }, 0);
+      const hoursOverThreshold = Math.floor(totalHours - rule.goal_hours);
+      if (hoursOverThreshold > 0) total += hoursOverThreshold * rule.bonus_points;
     }
   });
 
@@ -1208,12 +1216,34 @@ async function loadRules() {
                  style="width:${todayPct}%"></div>
           </div>
         </div>`;
+
+    } else if (rule.rule_type === 'hourly_threshold_bonus') {
+      const totalHours = windowSessions.reduce((sum, s) =>
+        sum + (new Date(s.end_time) - new Date(s.start_time)) / 3600000, 0);
+      const hoursOverThreshold = Math.floor(totalHours - rule.goal_hours);
+      pointsEarned = hoursOverThreshold > 0 ? hoursOverThreshold * rule.bonus_points : 0;
+      const progressPct = Math.min(100, (totalHours / rule.goal_hours) * 100);
+      const statusText = totalHours >= rule.goal_hours
+        ? `${hoursOverThreshold}h past threshold`
+        : `${(rule.goal_hours - totalHours).toFixed(1)}h to threshold`;
+      progressHtml = `
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span>${totalHours.toFixed(1)}h logged · ${statusText}</span>
+            <span>${rule.bonus_points} pts/hr after ${rule.goal_hours}h</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill${progressPct >= 100 ? ' complete' : ''}"
+                 style="width:${progressPct}%"></div>
+          </div>
+        </div>`;
     }
 
     const typeLabel = {
       hours_per_point: 'Per Hour',
       calendar_month_goal_bonus: 'Monthly Goal',
-      daily_goal_bonus: 'Daily Goal'
+      daily_goal_bonus: 'Daily Goal',
+      hourly_threshold_bonus: 'Hourly Threshold'
     }[rule.rule_type] || rule.rule_type;
 
     return `
@@ -1554,7 +1584,23 @@ function updateRuleFields() {
   const type = document.getElementById('ruleType').value;
   document.getElementById('fieldsHoursPerPoint').classList.toggle('visible', type === 'hours_per_point');
   document.getElementById('fieldsGoalBonus').classList.toggle('visible',
-    type === 'calendar_month_goal_bonus' || type === 'daily_goal_bonus');
+    type === 'calendar_month_goal_bonus' || type === 'daily_goal_bonus' || type === 'hourly_threshold_bonus');
+
+  const goalHoursLabel = document.getElementById('ruleGoalHoursLabel');
+  const bonusPointsLabel = document.getElementById('ruleBonusPointsLabel');
+  const goalHoursInput = document.getElementById('ruleGoalHours');
+  const bonusPointsInput = document.getElementById('ruleBonusPoints');
+  if (type === 'hourly_threshold_bonus') {
+    goalHoursLabel.textContent = 'Threshold Hours';
+    goalHoursInput.placeholder = 'e.g. 4';
+    bonusPointsLabel.textContent = 'Points per Hour After';
+    bonusPointsInput.placeholder = 'e.g. 2';
+  } else {
+    goalHoursLabel.textContent = 'Goal Hours';
+    goalHoursInput.placeholder = 'e.g. 10';
+    bonusPointsLabel.textContent = 'Bonus Points';
+    bonusPointsInput.placeholder = 'e.g. 20';
+  }
 }
 
 document.getElementById('ruleType').addEventListener('change', updateRuleFields);
@@ -1810,13 +1856,15 @@ async function loadAllRules() {
   const typeLabel = {
     hours_per_point: 'Per Hour',
     calendar_month_goal_bonus: 'Monthly Goal',
-    daily_goal_bonus: 'Daily Goal'
+    daily_goal_bonus: 'Daily Goal',
+    hourly_threshold_bonus: 'Hourly Threshold'
   };
 
   list.innerHTML = '<div style="font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--stone);margin-bottom:8px;">All Rules</div>' +
     data.map(r => {
       let detail = '';
       if (r.rule_type === 'hours_per_point') detail = `${r.hours_per_point}h per point`;
+      else if (r.rule_type === 'hourly_threshold_bonus') detail = `${r.bonus_points} pts/hr after ${r.goal_hours}h`;
       else detail = `${r.goal_hours}h goal · ${r.bonus_points} pts bonus`;
 
       return `
