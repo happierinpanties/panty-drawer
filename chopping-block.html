@@ -645,6 +645,16 @@ async function retirePanty(id, btn) {
   renderGrid();
 }
 
+ document.getElementById('grid').addEventListener('click', e => {
+  const btn = e.target.closest('.retire-btn');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  retirePanty(id, btn);
+});
+
+document.getElementById('ageFilter').addEventListener('change', applyFilters);
+document.getElementById('wornFilter').addEventListener('change', applyFilters); 
+  
 // ── Init ──────────────────────────────────────────────────────
 async function init() {
   const { data: { session } } = await client.auth.getSession();
