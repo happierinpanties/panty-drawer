@@ -619,29 +619,31 @@ async function retirePanty(id, btn) {
   btn.disabled = true;
   btn.textContent = 'Retiring...';
 
-  const { error } = await client.from('panties').update({ status: 'Retired' }).eq('id', id);
+  // .select() is required here — without it, an RLS-denied update returns
+  // { error: null, data: null }. A zero-row match is treated as a *successful*
+  // update of nothing, not a permissions error, so this is the only way to
+  // tell "it worked" from "RLS silently blocked it."
+  const { data, error } = await client
+    .from('panties')
+    .update({ status: 'Retired' })
+    .eq('id', id)
+    .select('id');
 
-  if (error) {
-    console.error('Retire error:', JSON.stringify(error));
+  if (error || !data || data.length === 0) {
+    if (error) {
+      console.error('Retire error:', JSON.stringify(error));
+    } else {
+      console.error('Retire affected 0 rows for panty id', id, '— likely blocked by an RLS policy on panties.');
+    }
     btn.disabled = false;
     btn.textContent = 'Retire';
-    alert('Could not retire this panty — your account may not be approved for this action.');
+    alert('Could not retire this panty — your account may not be approved for this action, or a database policy is blocking the update.');
     return;
   }
 
   candidates = candidates.filter(c => c.id !== id);
   renderGrid();
 }
-
-document.getElementById('grid').addEventListener('click', e => {
-  const btn = e.target.closest('.retire-btn');
-  if (!btn) return;
-  const id = btn.dataset.id;
-  retirePanty(id, btn);
-});
-
-document.getElementById('ageFilter').addEventListener('change', applyFilters);
-document.getElementById('wornFilter').addEventListener('change', applyFilters);
 
 // ── Init ──────────────────────────────────────────────────────
 async function init() {
