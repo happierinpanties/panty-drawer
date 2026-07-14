@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Chopping Block</title>
+<!-- Supabase loaded as ESM module below -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+/* ── Tokens ─────────────────────────────────────────────── */
+:root {
+  --blush: #f5e8e4;
+  --rose: #c9847a;
+  --plum: #6b3a45;
+  --ivory: #fdf8f6;
+  --stone: #8a7570;
+  --ink: #2e1f22;
+  --border: #e8d8d3;
+  --card-bg: #ffffff;
+  --nav-h: 64px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--ivory);
+  color: var(--ink);
+  font-weight: 300;
+}
+
+/* ── Nav ─────────────────────────────────────────────────── */
+nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(253, 248, 246, 0.96);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  height: var(--nav-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+}
+.nav-wordmark {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: var(--plum);
+  text-decoration: none;
+}
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  list-style: none;
+  position: relative;
+}
+.nav-links > li { position: relative; }
+.nav-links > li > a,
+.nav-links > li > button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 16px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--stone);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.nav-links > li > a:hover,
+.nav-links > li > button:hover,
+.nav-links > li > a.active { color: var(--plum); }
+.nav-links > li > a.active { border-bottom: 2px solid var(--rose); }
+
+/* Dropdown */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 1px);
+  right: 0;
+  min-width: 180px;
+  background: var(--ivory);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--rose);
+  box-shadow: 0 8px 24px rgba(107,58,69,0.08);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 0.18s, transform 0.18s;
+  list-style: none;
+}
+.nav-links > li:hover .dropdown,
+.nav-links > li:focus-within .dropdown {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateY(0);
+}
+.dropdown li a {
+  display: block;
+  padding: 12px 20px;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--stone);
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+.dropdown li a:hover { background: var(--blush); color: var(--plum); }
+.chevron { font-size: 9px; transition: transform 0.2s; }
+.nav-links > li:hover .chevron { transform: rotate(180deg); }
+
+/* Auth area (mirrors cage.html) */
+.auth-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 8px;
+  padding-left: 16px;
+  border-left: 1px solid var(--border);
+}
+.auth-email { font-size: 11px; color: var(--stone); letter-spacing: 0.04em; }
+.btn-text {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rose);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 10px;
+  transition: color 0.2s;
+}
+.btn-text:hover { color: var(--plum); }
+
+/* ── Page Header ─────────────────────────────────────────── */
+.page-header {
+  text-align: center;
+  padding: 56px 24px 40px;
+  border-bottom: 1px solid var(--border);
+}
+.page-header .eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--rose);
+  margin-bottom: 14px;
+}
+.page-header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(34px, 5vw, 52px);
+  font-weight: 400;
+  color: var(--plum);
+  line-height: 1.15;
+}
+.page-header h1 em { font-style: italic; }
+
+/* ── Sign-in card (mirrors cage.html) ───────────────────── */
+.signin-wrap { padding: 24px 32px 0; }
+.signin-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--rose);
+  padding: 28px 32px;
+  text-align: center;
+  max-width: 420px;
+  margin: 0 auto;
+}
+.signin-card p { font-size: 13px; color: var(--stone); margin-bottom: 16px; line-height: 1.6; }
+.signin-form { display: flex; flex-direction: column; gap: 12px; }
+input[type="email"] {
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 11px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--ivory);
+}
+input[type="email"]:focus { outline: none; border-color: var(--rose); }
+.btn-primary {
+  background: var(--plum);
+  color: #fff;
+  border: none;
+  border-radius: 2px;
+  padding: 12px 20px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-primary:hover { background: var(--rose); }
+.btn-primary:disabled { background: var(--border); cursor: default; }
+.signin-status { font-size: 12px; color: var(--stone); margin-top: 14px; min-height: 16px; }
+.signin-status.success { color: var(--plum); }
+.signin-status.error { color: #a33; }
+
+/* ── Filters ─────────────────────────────────────────────── */
+.filter-bar {
+  background: var(--blush);
+  border-bottom: 1px solid var(--border);
+  padding: 20px 32px;
+  margin-top: 24px;
+}
+.filter-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.filter-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--stone);
+  white-space: nowrap;
+}
+.filter-inner select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--ivory) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a7570'/%3E%3C/svg%3E") no-repeat right 12px center;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 9px 32px 9px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.2s;
+  min-width: 160px;
+}
+.filter-inner select:focus { outline: none; border-color: var(--rose); }
+
+/* ── Result count ─────────────────────────────────────────── */
+.result-bar {
+  max-width: 1200px;
+  margin: 24px auto 0;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#resultCount { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--stone); }
+
+/* ── Grid ─────────────────────────────────────────────────── */
+.grid-wrap { max-width: 1200px; margin: 24px auto 64px; padding: 0 32px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 24px; }
+.item {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.item:hover { box-shadow: 0 8px 28px rgba(107,58,69,0.12); transform: translateY(-3px); }
+.item-img-wrap { position: relative; background: var(--blush); aspect-ratio: 3/4; overflow: hidden; }
+.item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s ease; }
+.item:hover img { transform: scale(1.04); }
+.item-info { padding: 12px 14px 14px; border-top: 1px solid var(--border); }
+.item-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink);
+  margin-bottom: 4px;
+  line-height: 1.35;
+}
+.item-meta { font-size: 11px; font-weight: 400; letter-spacing: 0.03em; color: var(--stone); line-height: 1.5; }
+
+.retire-row { margin-top: 10px; }
+.retire-btn {
+  width: 100%;
+  background: none;
+  border: 1px solid #a33;
+  border-radius: 2px;
+  padding: 7px 0;
+  cursor: pointer;
+  color: #a33;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: background 0.15s, color 0.15s;
+}
+.retire-btn:hover { background: #a33; color: #fff; }
+.retire-btn:disabled { border-color: var(--border); color: var(--border); cursor: default; background: none; }
+.retire-btn.locked {
+  border-color: var(--border);
+  color: var(--stone);
+  cursor: pointer;
+}
+.retire-btn.locked:hover { background: var(--blush); color: var(--stone); }
+
+/* Empty state */
+.empty { grid-column: 1 / -1; text-align: center; padding: 64px 24px; color: var(--stone); }
+.empty p { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; }
+
+/* Loading skeleton */
+.skeleton {
+  background: linear-gradient(90deg, var(--blush) 25%, var(--border) 50%, var(--blush) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 2px;
+  border: 1px solid var(--border);
+}
+.skeleton-img { aspect-ratio: 3/4; }
+.skeleton-text { height: 13px; margin: 12px 14px 4px; width: 70%; }
+.skeleton-sub { height: 11px; margin: 0 14px 14px; width: 45%; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* ── Footer ──────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 24px 32px;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--stone);
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 600px) {
+  nav { padding: 0 16px; }
+  .filter-bar { padding: 16px; }
+  .filter-inner { gap: 8px; }
+  .filter-inner select { min-width: 130px; font-size: 11px; }
+  .result-bar, .grid-wrap { padding: 0 16px; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Navigation ───────────────────────────────────────────── -->
+<nav>
+  <a class="nav-wordmark" href="/">The Drawer</a>
+  <ul class="nav-links">
+    <li><a href="https://www.panty-drawer.com">Drawer</a></li>
+    <li>
+      <button aria-haspopup="true">Pages <span class="chevron">▾</span></button>
+      <ul class="dropdown">
+        <li><a href="/stats">Panty Stats</a></li>
+        <li><a href="/hamper">Hamper</a></li>
+        <li><a href="/retired">Retired Panties</a></li>
+        <li><a href="/chopping-block" class="active">Chopping Block</a></li>
+      </ul>
+    </li>
+    <li class="auth-area" id="authArea"><!-- populated by JS --></li>
+  </ul>
+</nav>
+
+<!-- ── Page Header ───────────────────────────────────────────── -->
+<header class="page-header">
+  <p class="eyebrow">Decision Time</p>
+  <h1>The <em>Chopping Block</em></h1>
+</header>
+
+<!-- ── Sign-in prompt (only shown signed out; retiring requires auth) ── -->
+<div class="signin-wrap" id="signedOutSection" style="display:none;">
+  <div class="signin-card">
+    <p>Sign in to retire panties from here. Browsing candidates doesn't require it.</p>
+    <form class="signin-form" id="signinForm">
+      <input type="email" id="signinEmail" placeholder="you@example.com" required />
+      <button type="submit" class="btn-primary">Send Magic Link</button>
+    </form>
+    <div class="signin-status" id="signinStatus"></div>
+  </div>
+</div>
+
+<!-- ── Filters ──────────────────────────────────────────────── -->
+<div class="filter-bar">
+  <div class="filter-inner">
+    <span class="filter-label">Owned longer than</span>
+    <select id="ageFilter">
+      <option value="30">1 Month</option>
+      <option value="90" selected>3 Months</option>
+      <option value="180">6 Months</option>
+      <option value="365">1 Year</option>
+    </select>
+    <span class="filter-label">Not worn in</span>
+    <select id="wornFilter">
+      <option value="90">3 Months</option>
+      <option value="180" selected>6 Months</option>
+      <option value="365">1 Year</option>
+    </select>
+  </div>
+</div>
+
+<!-- ── Result count ─────────────────────────────────────────── -->
+<div class="result-bar">
+  <span id="resultCount"></span>
+</div>
+
+<!-- ── Grid ─────────────────────────────────────────────────── -->
+<div class="grid-wrap">
+  <div class="grid" id="grid">
+    <!-- populated by JS -->
+  </div>
+</div>
+
+<footer>
+  &copy; The Drawer &nbsp;·&nbsp; Be honest with yourself
+</footer>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const client = createClient(
+  'https://rkocfrsaeeyxgfdxeiqz.supabase.co',
+  'sb_publishable_yp7myP1S5wmYLQrgwNWxhg_IfZHdeZj'
+);
+
+const MS_DAY = 86400000;
+let currentSession = null;
+let rawPanties = [];
+let rawWearMap = {}; // panty_id -> array of Date
+let candidates = [];
+
+// ── Auth UI (mirrors cage.html) ─────────────────────────────────
+function renderAuthArea() {
+  const area = document.getElementById('authArea');
+  if (currentSession) {
+    area.innerHTML = `
+      <span class="auth-email">${currentSession.user.email}</span>
+      <button class="btn-text" id="signOutBtn">Sign Out</button>
+    `;
+    document.getElementById('signOutBtn').addEventListener('click', signOut);
+  } else {
+    area.innerHTML = `<a href="#" class="btn-text" id="navSignInLink">Sign In</a>`;
+    document.getElementById('navSignInLink').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('signedOutSection').scrollIntoView({ behavior: 'smooth' });
+    });
+  }
+}
+
+function renderPageAuthState() {
+  document.getElementById('signedOutSection').style.display = currentSession ? 'none' : 'block';
+  renderGrid(); // re-render so retire buttons reflect auth state
+}
+
+document.getElementById('signinForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('signinEmail').value.trim();
+  const statusEl = document.getElementById('signinStatus');
+  statusEl.textContent = 'Sending...';
+  statusEl.className = 'signin-status';
+
+  const { error } = await client.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href }
+  });
+
+  if (error) {
+    if (error.code === 'over_email_send_rate_limit' || error.status === 429) {
+      statusEl.textContent = 'Too many attempts right now — please try again in a bit.';
+    } else {
+      // Generic on purpose: covers allowlist rejection and any other failure
+      // without revealing whether the email is approved or not.
+      statusEl.textContent = 'Something went wrong. Please try again.';
+    }
+    statusEl.className = 'signin-status error';
+    console.error('Sign-in error:', JSON.stringify(error));
+  } else {
+    statusEl.textContent = 'Check your email for a sign-in link.';
+    statusEl.className = 'signin-status success';
+  }
+});
+
+async function signOut() {
+  await client.auth.signOut();
+  currentSession = null;
+  renderAuthArea();
+  renderPageAuthState();
+}
+
+// ── Formatting helpers ───────────────────────────────────────────
+function formatDuration(days) {
+  if (days >= 365) return `${(days / 365).toFixed(1)} yr`;
+  if (days >= 30) return `${Math.round(days / 30)} mo`;
+  return `${Math.max(1, Math.round(days))} d`;
+}
+
+function formatMeta(c) {
+  const ageLabel = `Owned ${formatDuration(c.ageInDays)}`;
+  const wornLabel = c.wears === 0
+    ? 'Never worn'
+    : `Worn ${c.wears}× · last worn ${formatDuration(c.daysSinceWorn)} ago`;
+  return `${ageLabel} · ${wornLabel}`;
+}
+
+// ── Skeleton loader ───────────────────────────────────────────
+function showSkeletons() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = Array.from({ length: 8 }).map(() => `
+    <div>
+      <div class="skeleton skeleton-img"></div>
+      <div class="skeleton skeleton-text"></div>
+      <div class="skeleton skeleton-sub"></div>
+    </div>
+  `).join('');
+}
+
+// ── Data load (once) ─────────────────────────────────────────────
+async function loadData() {
+  showSkeletons();
+
+  const [pantiesRes, wearRes] = await Promise.all([
+    client
+      .from('panties')
+      .select('id, name, image_url, created_at, brands(name)')
+      .neq('status', 'Retired'),
+    client.from('wear_history').select('panty_id, worn_at'),
+  ]);
+
+  if (pantiesRes.error) console.error('Panties error:', JSON.stringify(pantiesRes.error));
+  if (wearRes.error) console.error('Wear history error:', JSON.stringify(wearRes.error));
+
+  rawPanties = pantiesRes.data || [];
+  rawWearMap = {};
+  (wearRes.data || []).forEach(w => {
+    if (!rawWearMap[w.panty_id]) rawWearMap[w.panty_id] = [];
+    rawWearMap[w.panty_id].push(new Date(w.worn_at));
+  });
+
+  applyFilters();
+}
+
+// ── Filter + sort (client-side, mirrors the reference SQL) ───────
+function applyFilters() {
+  const ageThreshold = parseInt(document.getElementById('ageFilter').value, 10);
+  const wornThreshold = parseInt(document.getElementById('wornFilter').value, 10);
+  const now = new Date();
+
+  candidates = rawPanties.map(p => {
+    const created = new Date(p.created_at);
+    const ageInDays = (now - created) / MS_DAY;
+    const wearDates = rawWearMap[p.id] || [];
+    const wears = wearDates.length;
+    const lastWorn = wears > 0 ? new Date(Math.max(...wearDates.map(d => d.getTime()))) : null;
+    const daysSinceWorn = lastWorn ? (now - lastWorn) / MS_DAY : null;
+    return { ...p, ageInDays, wears, lastWorn, daysSinceWorn };
+  }).filter(c => {
+    if (c.ageInDays <= ageThreshold) return false;
+    if (c.wears === 0) return true; // never worn always qualifies, matches original query
+    return c.daysSinceWorn > wornThreshold;
+  });
+
+  // Tiebreak order: wears asc, age desc, last_worn desc
+  candidates.sort((a, b) => {
+    if (a.wears !== b.wears) return a.wears - b.wears;
+    if (a.ageInDays !== b.ageInDays) return b.ageInDays - a.ageInDays;
+    const aLW = a.lastWorn ? a.lastWorn.getTime() : -Infinity;
+    const bLW = b.lastWorn ? b.lastWorn.getTime() : -Infinity;
+    return bLW - aLW;
+  });
+
+  renderGrid();
+}
+
+// ── Render ────────────────────────────────────────────────────
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  const countDiv = document.getElementById('resultCount');
+
+  countDiv.innerText = `${candidates.length} on the chopping block`;
+
+  if (candidates.length === 0) {
+    grid.innerHTML = '<div class="empty"><p>Nothing meets the criteria. Your drawer is fully justified.</p></div>';
+    return;
+  }
+
+  grid.innerHTML = candidates.map(c => {
+    const brand = c.brands?.name ? c.brands.name + ' · ' : '';
+    const btnHtml = currentSession
+      ? `<button class="retire-btn" data-id="${c.id}">Retire</button>`
+      : `<button class="retire-btn locked" data-id="${c.id}">Sign in to retire</button>`;
+    return `
+      <div class="item" data-id="${c.id}">
+        <div class="item-img-wrap">
+          <img src="${c.image_url}" alt="${c.name}" loading="lazy" />
+        </div>
+        <div class="item-info">
+          <div class="item-name">${c.name}</div>
+          <div class="item-meta">${brand}${formatMeta(c)}</div>
+          <div class="retire-row">${btnHtml}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── Retire action ─────────────────────────────────────────────
+async function retirePanty(id, btn) {
+  if (!currentSession) {
+    document.getElementById('signedOutSection').scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Retiring...';
+
+  const { error } = await client.from('panties').update({ status: 'Retired' }).eq('id', id);
+
+  if (error) {
+    console.error('Retire error:', JSON.stringify(error));
+    btn.disabled = false;
+    btn.textContent = 'Retire';
+    alert('Could not retire this panty — your account may not be approved for this action.');
+    return;
+  }
+
+  candidates = candidates.filter(c => c.id !== id);
+  renderGrid();
+}
+
+document.getElementById('grid').addEventListener('click', e => {
+  const btn = e.target.closest('.retire-btn');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  retirePanty(id, btn);
+});
+
+document.getElementById('ageFilter').addEventListener('change', applyFilters);
+document.getElementById('wornFilter').addEventListener('change', applyFilters);
+
+// ── Init ──────────────────────────────────────────────────────
+async function init() {
+  const { data: { session } } = await client.auth.getSession();
+  currentSession = session;
+  renderAuthArea();
+  renderPageAuthState();
+
+  await loadData();
+
+  client.auth.onAuthStateChange((_event, session) => {
+    currentSession = session;
+    renderAuthArea();
+    renderPageAuthState();
+  });
+}
+
+init();
+</script>
+</body>
+</html>
