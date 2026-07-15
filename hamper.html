@@ -1,444 +1,530 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Hamper</title>
-  <!-- Supabase loaded as ESM module below -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Hamper</title>
+<!-- Supabase loaded as ESM module below -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+/* ── Tokens ─────────────────────────────────────────────── */
+:root {
+  --blush: #f5e8e4;
+  --rose: #c9847a;
+  --plum: #6b3a45;
+  --ivory: #fdf8f6;
+  --stone: #8a7570;
+  --ink: #2e1f22;
+  --border: #e8d8d3;
+  --card-bg: #ffffff;
+  --nav-h: 64px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--ivory);
+  color: var(--ink);
+  font-weight: 300;
+}
 
-  <style>
-    /* ── Tokens ─────────────────────────────────────────────── */
-    :root {
-      --blush:   #f5e8e4;
-      --rose:    #c9847a;
-      --plum:    #6b3a45;
-      --ivory:   #fdf8f6;
-      --stone:   #8a7570;
-      --ink:     #2e1f22;
-      --border:  #e8d8d3;
-      --card-bg: #ffffff;
-      --nav-h:   64px;
-    }
+/* ── Nav ─────────────────────────────────────────────────── */
+nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(253, 248, 246, 0.96);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  height: var(--nav-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+}
+.nav-wordmark {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: var(--plum);
+  text-decoration: none;
+}
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  list-style: none;
+  position: relative;
+}
+.nav-links > li { position: relative; }
+.nav-links > li > a,
+.nav-links > li > button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 16px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--stone);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.nav-links > li > a:hover,
+.nav-links > li > button:hover,
+.nav-links > li > a.active { color: var(--plum); }
+.nav-links > li > a.active { border-bottom: 2px solid var(--rose); }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* Dropdown */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 1px);
+  right: 0;
+  min-width: 180px;
+  background: var(--ivory);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--rose);
+  box-shadow: 0 8px 24px rgba(107,58,69,0.08);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 0.18s, transform 0.18s;
+  list-style: none;
+}
+.nav-links > li:hover .dropdown,
+.nav-links > li:focus-within .dropdown {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateY(0);
+}
+.dropdown li a {
+  display: block;
+  padding: 12px 20px;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--stone);
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+.dropdown li a:hover { background: var(--blush); color: var(--plum); }
+.chevron { font-size: 9px; transition: transform 0.2s; }
+.nav-links > li:hover .chevron { transform: rotate(180deg); }
 
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--ivory);
-      color: var(--ink);
-      font-weight: 300;
-    }
+/* Auth area in nav */
+.auth-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 8px;
+  padding-left: 16px;
+  border-left: 1px solid var(--border);
+}
+.auth-email {
+  font-size: 11px;
+  color: var(--stone);
+  letter-spacing: 0.04em;
+}
+.btn-text {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rose);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 10px;
+  transition: color 0.2s;
+}
+.btn-text:hover { color: var(--plum); }
 
-    /* ── Nav ─────────────────────────────────────────────────── */
-    nav {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: rgba(253, 248, 246, 0.96);
-      backdrop-filter: blur(8px);
-      border-bottom: 1px solid var(--border);
-      height: var(--nav-h);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 32px;
-    }
+/* ── Page Header ──────────────────────────────────────────── */
+.page-header {
+  text-align: center;
+  padding: 56px 24px 40px;
+  border-bottom: 1px solid var(--border);
+}
+.page-header .eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--rose);
+  margin-bottom: 14px;
+}
+.page-header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(34px, 5vw, 52px);
+  font-weight: 400;
+  color: var(--plum);
+  line-height: 1.15;
+}
+.page-header h1 em { font-style: italic; font-weight: 400; }
 
-    .nav-wordmark {
-      font-family: 'Playfair Display', serif;
-      font-size: 20px;
-      font-weight: 400;
-      letter-spacing: 0.08em;
-      color: var(--plum);
-      text-decoration: none;
-    }
+/* ── Filters ─────────────────────────────────────────────── */
+.filter-bar {
+  background: var(--blush);
+  border-bottom: 1px solid var(--border);
+  padding: 20px 32px;
+}
+.filter-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.filter-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--stone);
+  white-space: nowrap;
+}
+.filter-inner select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--ivory) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a7570'/%3E%3C/svg%3E") no-repeat right 12px center;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 9px 32px 9px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.2s;
+  min-width: 140px;
+}
+.filter-inner select:focus { outline: none; border-color: var(--rose); }
+.filter-divider { flex: 1; }
+.sort-wrap { display: flex; align-items: center; gap: 10px; }
 
-    .nav-links {
-      display: flex;
-      gap: 0;
-      list-style: none;
-      position: relative;
-    }
+/* ── Action bar (laundering controls) ───────────────────────── */
+.action-bar {
+  background: var(--ivory);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 32px;
+}
+.action-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  min-height: 36px;
+}
+.btn-primary {
+  background: var(--plum);
+  color: #fff;
+  border: none;
+  border-radius: 2px;
+  padding: 10px 18px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-primary:hover { background: var(--rose); }
+.btn-primary:disabled { background: var(--border); cursor: default; }
+.btn-secondary {
+  background: none;
+  color: var(--stone);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 10px 18px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.btn-secondary:hover { background: var(--blush); border-color: var(--rose); color: var(--plum); }
+.selected-count {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--stone);
+}
+.selected-count strong { color: var(--plum); font-weight: 500; }
+.action-divider { flex: 1; }
+.action-status {
+  font-size: 12px;
+  color: var(--stone);
+}
+.action-status.success { color: var(--plum); }
+.action-status.error { color: #a33; }
 
-    .nav-links > li {
-      position: relative;
-    }
+/* Inline sign-in prompt (signed-out state) */
+.inline-signin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.inline-signin span {
+  font-size: 12px;
+  color: var(--stone);
+  font-style: italic;
+}
+.inline-signin input[type="email"] {
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 9px 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--card-bg);
+  min-width: 200px;
+}
+.inline-signin input[type="email"]:focus { outline: none; border-color: var(--rose); }
 
-    .nav-links > li > a,
-    .nav-links > li > button {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding: 8px 16px;
-      font-family: 'Inter', sans-serif;
-      font-size: 12px;
-      font-weight: 500;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--stone);
-      text-decoration: none;
-      background: none;
-      border: none;
-      cursor: pointer;
-      transition: color 0.2s;
-    }
+/* ── Result count ─────────────────────────────────────────── */
+.result-bar {
+  max-width: 1200px;
+  margin: 24px auto 0;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#resultCount {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--stone);
+}
 
-    .nav-links > li > a:hover,
-    .nav-links > li > button:hover,
-    .nav-links > li > a.active {
-      color: var(--plum);
-    }
+/* ── Grid ─────────────────────────────────────────────────── */
+.grid-wrap {
+  max-width: 1200px;
+  margin: 24px auto 64px;
+  padding: 0 32px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 24px;
+}
+.item {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  transition: box-shadow 0.2s, transform 0.2s, border-color 0.15s;
+  cursor: default;
+  position: relative;
+}
+.item:hover {
+  box-shadow: 0 8px 28px rgba(107,58,69,0.12);
+  transform: translateY(-3px);
+}
+.item.selectable { cursor: pointer; }
+.item.selected {
+  border-color: var(--rose);
+  box-shadow: 0 0 0 2px var(--rose);
+}
+.item-check {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 5;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(253,248,246,0.92);
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+.item.selected .item-check {
+  background: var(--rose);
+  border-color: var(--rose);
+}
+.item-check svg {
+  width: 12px;
+  height: 12px;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+.item.selected .item-check svg { opacity: 1; }
+.item-img-wrap {
+  position: relative;
+  background: var(--blush);
+  aspect-ratio: 3/4;
+  overflow: hidden;
+}
+.item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+.item:hover img { transform: scale(1.04); }
+.item-info {
+  padding: 12px 14px 14px;
+  border-top: 1px solid var(--border);
+}
+.item-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink);
+  margin-bottom: 4px;
+  line-height: 1.35;
+}
+.item-meta {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: var(--stone);
+}
+.wear-pip-row {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.pip { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
+.pip.filled { background: var(--rose); }
 
-    .nav-links > li > a.active {
-      border-bottom: 2px solid var(--rose);
-    }
+/* Empty state */
+.empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 64px 24px;
+  color: var(--stone);
+}
+.empty p { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; }
 
-    /* Dropdown */
-    .dropdown {
-      position: absolute;
-      top: calc(100% + 1px);
-      right: 0;
-      min-width: 180px;
-      background: var(--ivory);
-      border: 1px solid var(--border);
-      border-top: 2px solid var(--rose);
-      box-shadow: 0 8px 24px rgba(107,58,69,0.08);
-      opacity: 0;
-      pointer-events: none;
-      transform: translateY(-4px);
-      transition: opacity 0.18s, transform 0.18s;
-      list-style: none;
-    }
+/* Loading skeleton */
+.skeleton {
+  background: linear-gradient(90deg, var(--blush) 25%, var(--border) 50%, var(--blush) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 2px;
+  border: 1px solid var(--border);
+}
+.skeleton-img { aspect-ratio: 3/4; }
+.skeleton-text { height: 13px; margin: 12px 14px 4px; width: 70%; }
+.skeleton-sub { height: 11px; margin: 0 14px 14px; width: 45%; }
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
 
-    .nav-links > li:hover .dropdown,
-    .nav-links > li:focus-within .dropdown {
-      opacity: 1;
-      pointer-events: all;
-      transform: translateY(0);
-    }
+/* ── Modal ───────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(46,31,34,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+.modal {
+  background: var(--card-bg);
+  border-top: 3px solid var(--rose);
+  max-width: 440px;
+  width: 100%;
+  padding: 32px;
+}
+.modal-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px;
+  color: var(--plum);
+  margin-bottom: 12px;
+}
+.modal-body {
+  font-size: 13px;
+  color: var(--stone);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+.modal-body strong { color: var(--ink); font-weight: 500; }
+.modal-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.modal-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.modal-option:hover { border-color: var(--rose); background: var(--blush); }
+.modal-option.checked { border-color: var(--rose); background: var(--blush); }
+.modal-option input { margin-top: 3px; accent-color: var(--rose); }
+.modal-option-text { font-size: 12px; color: var(--ink); line-height: 1.5; }
+.modal-option-text small { display: block; color: var(--stone); margin-top: 2px; }
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.modal-status {
+  font-size: 12px;
+  margin-top: 12px;
+  min-height: 16px;
+}
+.modal-status.error { color: #a33; }
 
-    .dropdown li a {
-      display: block;
-      padding: 12px 20px;
-      font-size: 12px;
-      font-weight: 400;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--stone);
-      text-decoration: none;
-      transition: background 0.15s, color 0.15s;
-    }
+/* ── Footer ──────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 24px 32px;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--stone);
+}
 
-    .dropdown li a:hover {
-      background: var(--blush);
-      color: var(--plum);
-    }
-
-    .chevron {
-      font-size: 9px;
-      transition: transform 0.2s;
-    }
-
-    .nav-links > li:hover .chevron {
-      transform: rotate(180deg);
-    }
-
-    /* ── Hero / Page Header ──────────────────────────────────── */
-    .page-header {
-      text-align: center;
-      padding: 56px 24px 40px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .page-header .eyebrow {
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--rose);
-      margin-bottom: 14px;
-    }
-
-    .page-header h1 {
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(34px, 5vw, 52px);
-      font-weight: 400;
-      color: var(--plum);
-      line-height: 1.15;
-    }
-
-    .page-header h1 em {
-      font-style: italic;
-      font-weight: 400;
-    }
-
-    /* ── Filters ─────────────────────────────────────────────── */
-    .filter-bar {
-      background: var(--blush);
-      border-bottom: 1px solid var(--border);
-      padding: 20px 32px;
-    }
-
-    .filter-inner {
-      max-width: 1200px;
-      margin: 0 auto;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: center;
-    }
-
-    .filter-label {
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--stone);
-      white-space: nowrap;
-    }
-
-    .filter-inner select {
-      appearance: none;
-      -webkit-appearance: none;
-      background: var(--ivory) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a7570'/%3E%3C/svg%3E") no-repeat right 12px center;
-      border: 1px solid var(--border);
-      border-radius: 2px;
-      padding: 9px 32px 9px 14px;
-      font-family: 'Inter', sans-serif;
-      font-size: 12px;
-      font-weight: 400;
-      color: var(--ink);
-      cursor: pointer;
-      transition: border-color 0.2s;
-      min-width: 140px;
-    }
-
-    .filter-inner select:focus {
-      outline: none;
-      border-color: var(--rose);
-    }
-
-    .filter-divider {
-      flex: 1;
-    }
-
-    .sort-wrap {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    /* ── Result count ─────────────────────────────────────────── */
-    .result-bar {
-      max-width: 1200px;
-      margin: 24px auto 0;
-      padding: 0 32px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    #resultCount {
-      font-size: 12px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--stone);
-    }
-
-    /* ── Grid ─────────────────────────────────────────────────── */
-    .grid-wrap {
-      max-width: 1200px;
-      margin: 24px auto 64px;
-      padding: 0 32px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 24px;
-    }
-
-    .item {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 2px;
-      overflow: hidden;
-      transition: box-shadow 0.2s, transform 0.2s;
-      cursor: default;
-    }
-
-    .item:hover {
-      box-shadow: 0 8px 28px rgba(107,58,69,0.12);
-      transform: translateY(-3px);
-    }
-
-    .item-img-wrap {
-      position: relative;
-      background: var(--blush);
-      aspect-ratio: 3/4;
-      overflow: hidden;
-    }
-
-    .item img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      transition: transform 0.4s ease;
-    }
-
-    .item:hover img {
-      transform: scale(1.04);
-    }
-
-    .item-info {
-      padding: 12px 14px 14px;
-      border-top: 1px solid var(--border);
-    }
-
-    .item-name {
-      font-family: 'Playfair Display', serif;
-      font-size: 13px;
-      font-weight: 400;
-      color: var(--ink);
-      margin-bottom: 4px;
-      line-height: 1.35;
-    }
-
-    .item-meta {
-      font-size: 11px;
-      font-weight: 400;
-      letter-spacing: 0.05em;
-      color: var(--stone);
-    }
-
-    .pip-copy-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 8px;
-    }
-
-    .wear-pip-row {
-      display: flex;
-      gap: 3px;
-      flex-wrap: wrap;
-    }
-
-    .copy-btn {
-      flex-shrink: 0;
-      background: none;
-      border: 1px solid var(--border);
-      border-radius: 2px;
-      padding: 3px 7px;
-      cursor: pointer;
-      color: var(--stone);
-      font-family: 'Inter', sans-serif;
-      font-size: 10px;
-      font-weight: 500;
-      letter-spacing: 0.05em;
-      line-height: 1;
-      transition: background 0.15s, color 0.15s, border-color 0.15s;
-    }
-
-    .copy-btn:hover {
-      background: var(--blush);
-      border-color: var(--rose);
-      color: var(--plum);
-    }
-
-    .copy-btn.copied {
-      background: var(--rose);
-      border-color: var(--rose);
-      color: #fff;
-    }
-
-    .pip {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--border);
-    }
-
-    .pip.filled {
-      background: var(--rose);
-    }
-
-    /* Empty state */
-    .empty {
-      grid-column: 1 / -1;
-      text-align: center;
-      padding: 64px 24px;
-      color: var(--stone);
-    }
-
-    .empty p {
-      font-family: 'Playfair Display', serif;
-      font-style: italic;
-      font-size: 18px;
-    }
-
-    /* Loading skeleton */
-    .skeleton {
-      background: linear-gradient(90deg, var(--blush) 25%, var(--border) 50%, var(--blush) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.4s infinite;
-      border-radius: 2px;
-      border: 1px solid var(--border);
-    }
-
-    .skeleton-img {
-      aspect-ratio: 3/4;
-    }
-
-    .skeleton-text {
-      height: 13px;
-      margin: 12px 14px 4px;
-      width: 70%;
-    }
-
-    .skeleton-sub {
-      height: 11px;
-      margin: 0 14px 14px;
-      width: 45%;
-    }
-
-    @keyframes shimmer {
-      0%   { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-
-    /* ── Footer ──────────────────────────────────────────────── */
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 24px 32px;
-      text-align: center;
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--stone);
-    }
-
-    /* ── Responsive ──────────────────────────────────────────── */
-    @media (max-width: 600px) {
-      nav { padding: 0 16px; }
-      .filter-bar { padding: 16px; }
-      .filter-inner { gap: 8px; }
-      .filter-inner select { min-width: 120px; font-size: 11px; }
-      .result-bar, .grid-wrap { padding: 0 16px; }
-      .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
-    }
-  </style>
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 600px) {
+  nav { padding: 0 16px; }
+  .auth-email { display: none; }
+  .filter-bar { padding: 16px; }
+  .filter-inner { gap: 8px; }
+  .filter-inner select { min-width: 120px; font-size: 11px; }
+  .action-bar { padding: 12px 16px; }
+  .result-bar, .grid-wrap { padding: 0 16px; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+}
+</style>
 </head>
 <body>
 
 <!-- ── Navigation ───────────────────────────────────────────── -->
 <nav>
   <a class="nav-wordmark" href="/">The Drawer</a>
-
   <ul class="nav-links">
     <li><a href="https://www.panty-drawer.com">Drawer</a></li>
     <li>
@@ -448,6 +534,9 @@
         <li><a href="/hamper" class="active">Hamper</a></li>
         <li><a href="/retired">Retired Panties</a></li>
       </ul>
+    </li>
+    <li class="auth-area" id="authArea">
+      <!-- populated by JS -->
     </li>
   </ul>
 </nav>
@@ -479,6 +568,13 @@
   </div>
 </div>
 
+<!-- ── Action bar (laundering) ─────────────────────────────── -->
+<div class="action-bar">
+  <div class="action-inner" id="actionBar">
+    <!-- populated by JS -->
+  </div>
+</div>
+
 <!-- ── Result count ─────────────────────────────────────────── -->
 <div class="result-bar">
   <span id="resultCount"></span>
@@ -495,6 +591,20 @@
   &copy; The Drawer &nbsp;·&nbsp; All items in the wash
 </footer>
 
+<!-- ── Modal (hidden by default) ──────────────────────────────── -->
+<div class="modal-backdrop" id="modalBackdrop" style="display:none;">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-options" id="modalOptions" style="display:none;"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="modalCancelBtn">Cancel</button>
+      <button class="btn-primary" id="modalConfirmBtn">Confirm</button>
+    </div>
+    <div class="modal-status" id="modalStatus"></div>
+  </div>
+</div>
+
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
@@ -503,6 +613,10 @@ const client = createClient(
   'sb_publishable_yp7myP1S5wmYLQrgwNWxhg_IfZHdeZj'
 );
 
+let currentSession = null;
+let selectMode = false;
+let selectedIds = new Set();
+
 // ── Pip helpers ───────────────────────────────────────────────
 function renderPips(wears) {
   const MAX_PIPS = 10;
@@ -510,6 +624,133 @@ function renderPips(wears) {
   return Array.from({length: MAX_PIPS}, (_, i) =>
     `<span class="pip${i < filled ? ' filled' : ''}"></span>`
   ).join('');
+}
+
+// ── Auth: nav area ───────────────────────────────────────────
+function renderAuthArea() {
+  const area = document.getElementById('authArea');
+  if (currentSession) {
+    area.innerHTML = `
+      <span class="auth-email">${currentSession.user.email}</span>
+      <button class="btn-text" id="signOutBtn">Sign Out</button>
+    `;
+    document.getElementById('signOutBtn').addEventListener('click', signOut);
+  } else {
+    area.innerHTML = `<a href="#actionBar" class="btn-text" id="navSignInLink">Sign In</a>`;
+    document.getElementById('navSignInLink').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('inlineSigninEmail')?.focus();
+    });
+  }
+}
+
+async function signOut() {
+  await client.auth.signOut();
+  currentSession = null;
+  selectMode = false;
+  selectedIds.clear();
+  renderAuthArea();
+  renderActionBar();
+  loadPanties();
+}
+
+// ── Action bar ───────────────────────────────────────────────
+function renderActionBar() {
+  const bar = document.getElementById('actionBar');
+
+  if (!currentSession) {
+    bar.innerHTML = `
+      <form class="inline-signin" id="inlineSigninForm">
+        <span>Sign in to launder panties</span>
+        <input type="email" id="inlineSigninEmail" placeholder="you@example.com" required />
+        <button type="submit" class="btn-secondary">Send Magic Link</button>
+      </form>
+      <div class="action-divider"></div>
+      <span class="action-status" id="inlineSigninStatus"></span>
+    `;
+    document.getElementById('inlineSigninForm').addEventListener('submit', handleInlineSignin);
+    return;
+  }
+
+  if (!selectMode) {
+    bar.innerHTML = `
+      <button class="btn-primary" id="launderAllBtn">Launder All</button>
+      <button class="btn-secondary" id="selectBtn">Select</button>
+      <div class="action-divider"></div>
+      <span class="action-status" id="actionStatus"></span>
+    `;
+    document.getElementById('launderAllBtn').addEventListener('click', openLaunderAllModal);
+    document.getElementById('selectBtn').addEventListener('click', enterSelectMode);
+  } else {
+    bar.innerHTML = `
+      <span class="selected-count"><strong>${selectedIds.size}</strong> selected</span>
+      <button class="btn-primary" id="cleanSelectedBtn" ${selectedIds.size === 0 ? 'disabled' : ''}>Clean Selected</button>
+      <button class="btn-secondary" id="cancelSelectBtn">Cancel</button>
+      <div class="action-divider"></div>
+      <span class="action-status" id="actionStatus"></span>
+    `;
+    document.getElementById('cleanSelectedBtn').addEventListener('click', openLaunderSelectedModal);
+    document.getElementById('cancelSelectBtn').addEventListener('click', exitSelectMode);
+  }
+}
+
+async function handleInlineSignin(e) {
+  e.preventDefault();
+  const email = document.getElementById('inlineSigninEmail').value.trim();
+  const statusEl = document.getElementById('inlineSigninStatus');
+  statusEl.textContent = 'Sending...';
+  statusEl.className = 'action-status';
+
+  const { error } = await client.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href }
+  });
+
+  if (error) {
+    if (error.code === 'over_email_send_rate_limit' || error.status === 429) {
+      statusEl.textContent = 'Too many attempts — try again shortly.';
+    } else {
+      statusEl.textContent = 'Something went wrong. Please try again.';
+    }
+    statusEl.className = 'action-status error';
+    console.error('Sign-in error:', JSON.stringify(error));
+  } else {
+    statusEl.textContent = 'Check your email for a sign-in link.';
+    statusEl.className = 'action-status success';
+  }
+}
+
+function enterSelectMode() {
+  selectMode = true;
+  selectedIds.clear();
+  renderActionBar();
+  applySelectModeToGrid();
+}
+
+function exitSelectMode() {
+  selectMode = false;
+  selectedIds.clear();
+  renderActionBar();
+  applySelectModeToGrid();
+}
+
+function applySelectModeToGrid() {
+  document.querySelectorAll('.item').forEach(el => {
+    el.classList.toggle('selectable', selectMode);
+    el.classList.toggle('selected', selectMode && selectedIds.has(el.dataset.id));
+    const existingCheck = el.querySelector('.item-check');
+    if (selectMode && !existingCheck) {
+      el.insertAdjacentHTML('afterbegin', `
+        <div class="item-check">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3">
+            <path d="M4 12l6 6L20 6" />
+          </svg>
+        </div>
+      `);
+    } else if (!selectMode && existingCheck) {
+      existingCheck.remove();
+    }
+  });
 }
 
 // ── Filters ───────────────────────────────────────────────────
@@ -526,10 +767,10 @@ async function loadFilters() {
   if (fabricsRes.error) console.error('Fabrics error:', JSON.stringify(fabricsRes.error));
   if (colorsRes.error) console.error('Colors error:', JSON.stringify(colorsRes.error));
 
-  const brands  = brandsRes.data  || [];
-  const styles  = stylesRes.data  || [];
+  const brands = brandsRes.data || [];
+  const styles = stylesRes.data || [];
   const fabrics = fabricsRes.data || [];
-  const colors  = colorsRes.data  || [];
+  const colors = colorsRes.data || [];
 
   populateSelect('brand', brands, 'name', 'All Brands');
   populateSelect('style', styles, 'name', 'All Styles');
@@ -570,7 +811,6 @@ function showSkeletons() {
 async function loadPanties() {
   const grid = document.getElementById('grid');
   const countDiv = document.getElementById('resultCount');
-
   showSkeletons();
   countDiv.innerText = '';
 
@@ -579,15 +819,15 @@ async function loadPanties() {
     .select(`id, name, color, image_url, brands(id,name), styles(id,name), fabrics(id,name)`)
     .eq('status', 'Dirty');
 
-  const brand  = document.getElementById('brand').value;
-  const style  = document.getElementById('style').value;
+  const brand = document.getElementById('brand').value;
+  const style = document.getElementById('style').value;
   const fabric = document.getElementById('fabric').value;
-  const color  = document.getElementById('color').value;
+  const color = document.getElementById('color').value;
 
-  if (brand)  query = query.eq('brand_id', brand);
-  if (style)  query = query.eq('style_id', style);
+  if (brand) query = query.eq('brand_id', brand);
+  if (style) query = query.eq('style_id', style);
   if (fabric) query = query.eq('fabric_id', fabric);
-  if (color)  query = query.eq('color', color);
+  if (color) query = query.eq('color', color);
 
   const [pantiesResult, wearResult] = await Promise.all([
     query,
@@ -602,13 +842,17 @@ async function loadPanties() {
 
   const data = pantiesResult.data;
   const wearCounts = wearResult.data || [];
-
   const wearMap = {};
   (wearCounts || []).forEach(w => { wearMap[w.id] = w.wears; });
+
+  // Drop any selected ids that are no longer in the dirty set
+  const validIds = new Set((data || []).map(p => p.id));
+  selectedIds.forEach(id => { if (!validIds.has(id)) selectedIds.delete(id); });
 
   if (!data || data.length === 0) {
     countDiv.innerText = '0 items';
     grid.innerHTML = '<div class="empty"><p>Nothing here yet.</p></div>';
+    if (selectMode) renderActionBar();
     return;
   }
 
@@ -617,7 +861,7 @@ async function loadPanties() {
   data.sort((a, b) => {
     const wA = wearMap[a.id] || 0, wB = wearMap[b.id] || 0;
     if (sortValue === 'wear_desc') return wB - wA;
-    if (sortValue === 'wear_asc')  return wA - wB;
+    if (sortValue === 'wear_asc') return wA - wB;
     if (sortValue === 'alpha_asc') return a.name.localeCompare(b.name);
     if (sortValue === 'alpha_desc') return b.name.localeCompare(a.name);
     return 0;
@@ -627,45 +871,195 @@ async function loadPanties() {
 
   grid.innerHTML = data.map(p => {
     const wears = wearMap[p.id] || 0;
-    const brand = p.brands?.name || '';
+    const brandName = p.brands?.name || '';
     return `
-      <div class="item">
+      <div class="item" data-id="${p.id}">
         <div class="item-img-wrap">
           <img src="${p.image_url}" alt="${p.name}" loading="lazy" />
         </div>
         <div class="item-info">
           <div class="item-name">${p.name}</div>
-          <div class="item-meta">${brand ? brand + ' · ' : ''}Worn ${wears}×</div>
-          <div class="pip-copy-row">
-            <div class="wear-pip-row" title="Wear history (up to 10)">
-              ${renderPips(wears)}
-            </div>
-            <button class="copy-btn" data-name="${p.name.replace(/"/g, '&quot;')}">Copy</button>
+          <div class="item-meta">${brandName ? brandName + ' · ' : ''}Worn ${wears}×</div>
+          <div class="wear-pip-row" title="Wear history (up to 10)">
+            ${renderPips(wears)}
           </div>
         </div>
       </div>`;
   }).join('');
+
+  applySelectModeToGrid();
+  if (selectMode) renderActionBar();
 }
 
-// Copy button — event delegation so it works inside module scope
+// Item click — only acts as a selector while in select mode
 document.getElementById('grid').addEventListener('click', e => {
-  const btn = e.target.closest('.copy-btn');
-  if (!btn) return;
-  const name = btn.dataset.name;
-  navigator.clipboard.writeText(name).then(() => {
-    btn.textContent = 'Copied!';
-    btn.classList.add('copied');
-    setTimeout(() => {
-      btn.textContent = 'Copy';
-      btn.classList.remove('copied');
-    }, 1800);
-  });
+  if (!selectMode) return;
+  const card = e.target.closest('.item');
+  if (!card) return;
+  const id = card.dataset.id;
+  if (selectedIds.has(id)) {
+    selectedIds.delete(id);
+  } else {
+    selectedIds.add(id);
+  }
+  card.classList.toggle('selected', selectedIds.has(id));
+  renderActionBar();
 });
 
 document.getElementById('sort').addEventListener('change', loadPanties);
 
-loadFilters();
-loadPanties();
+// ── Modal ────────────────────────────────────────────────────
+let modalConfirmHandler = null;
+
+function openModal({ title, body, options, confirmLabel }) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = body;
+  document.getElementById('modalStatus').textContent = '';
+  document.getElementById('modalStatus').className = 'modal-status';
+
+  const optionsEl = document.getElementById('modalOptions');
+  if (options) {
+    optionsEl.style.display = 'flex';
+    optionsEl.innerHTML = options.map((opt, i) => `
+      <label class="modal-option${i === 0 ? ' checked' : ''}">
+        <input type="radio" name="modalRadio" value="${opt.value}" ${i === 0 ? 'checked' : ''} />
+        <span class="modal-option-text">${opt.label}<small>${opt.hint || ''}</small></span>
+      </label>
+    `).join('');
+    optionsEl.querySelectorAll('input[type="radio"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        optionsEl.querySelectorAll('.modal-option').forEach(el => el.classList.remove('checked'));
+        radio.closest('.modal-option').classList.add('checked');
+      });
+    });
+  } else {
+    optionsEl.style.display = 'none';
+    optionsEl.innerHTML = '';
+  }
+
+  document.getElementById('modalConfirmBtn').textContent = confirmLabel || 'Confirm';
+  document.getElementById('modalBackdrop').style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('modalBackdrop').style.display = 'none';
+  modalConfirmHandler = null;
+}
+
+document.getElementById('modalCancelBtn').addEventListener('click', closeModal);
+document.getElementById('modalBackdrop').addEventListener('click', (e) => {
+  if (e.target.id === 'modalBackdrop') closeModal();
+});
+document.getElementById('modalConfirmBtn').addEventListener('click', () => {
+  if (modalConfirmHandler) modalConfirmHandler();
+});
+
+function openLaunderAllModal() {
+  openModal({
+    title: 'Launder All Dirty Panties',
+    body: 'This will mark every dirty panty as clean and log a laundry cycle.',
+    options: [
+      {
+        value: 'exclude',
+        label: "I'm wearing something else right now",
+        hint: 'Leave my current panty out of this wash'
+      },
+      {
+        value: 'include',
+        label: "These are my laundry panties",
+        hint: 'Wash the ones I have on too'
+      }
+    ],
+    confirmLabel: 'Launder All'
+  });
+  modalConfirmHandler = async () => {
+    const choice = document.querySelector('input[name="modalRadio"]:checked')?.value;
+    await runLaunderAll(choice === 'include');
+  };
+}
+
+function openLaunderSelectedModal() {
+  if (selectedIds.size === 0) return;
+  openModal({
+    title: 'Launder Selected',
+    body: `This will mark <strong>${selectedIds.size} ${selectedIds.size === 1 ? 'panty' : 'panties'}</strong> as clean and log a laundry cycle.`,
+    options: null,
+    confirmLabel: 'Launder Selected'
+  });
+  modalConfirmHandler = async () => {
+    await runLaunderSelected();
+  };
+}
+
+async function runLaunderAll(includeCurrent) {
+  const statusEl = document.getElementById('modalStatus');
+  document.getElementById('modalConfirmBtn').disabled = true;
+  statusEl.textContent = 'Laundering...';
+  statusEl.className = 'modal-status';
+
+  const { error } = await client.rpc('launder_all_panties', { p_include_current: includeCurrent });
+
+  document.getElementById('modalConfirmBtn').disabled = false;
+
+  if (error) {
+    console.error('Launder all error:', JSON.stringify(error));
+    statusEl.textContent = error.message?.includes('Not authorized')
+      ? "This account isn't approved for laundering yet."
+      : 'Something went wrong — please try again.';
+    statusEl.className = 'modal-status error';
+    return;
+  }
+
+  closeModal();
+  loadPanties();
+}
+
+async function runLaunderSelected() {
+  const statusEl = document.getElementById('modalStatus');
+  document.getElementById('modalConfirmBtn').disabled = true;
+  statusEl.textContent = 'Laundering...';
+  statusEl.className = 'modal-status';
+
+  const { error } = await client.rpc('launder_selected_panties', {
+    p_panty_ids: Array.from(selectedIds)
+  });
+
+  document.getElementById('modalConfirmBtn').disabled = false;
+
+  if (error) {
+    console.error('Launder selected error:', JSON.stringify(error));
+    statusEl.textContent = error.message?.includes('Not authorized')
+      ? "This account isn't approved for laundering yet."
+      : 'Something went wrong — please try again.';
+    statusEl.className = 'modal-status error';
+    return;
+  }
+
+  closeModal();
+  exitSelectMode();
+  loadPanties();
+}
+
+// ── Session bootstrap ───────────────────────────────────────
+client.auth.onAuthStateChange((_event, session) => {
+  currentSession = session;
+  selectMode = false;
+  selectedIds.clear();
+  renderAuthArea();
+  renderActionBar();
+  applySelectModeToGrid();
+});
+
+async function init() {
+  const { data } = await client.auth.getSession();
+  currentSession = data.session;
+  renderAuthArea();
+  renderActionBar();
+  await loadFilters();
+  await loadPanties();
+}
+
+init();
 </script>
 </body>
 </html>
