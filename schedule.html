@@ -592,11 +592,31 @@
       box-shadow: 0 0 0 2px var(--rose);
     }
 
-    .picker-card-img {
-      aspect-ratio: 3/4;
-      overflow: hidden;
-      background: var(--blush);
-    }
+.picker-card-img {
+  position: relative;
+  aspect-ratio: 3/4;
+  overflow: hidden;
+  background: var(--blush);
+}
+
+.picker-badge {
+  position: absolute;
+  top: 5px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  border-radius: 50%;
+  background: rgba(253,248,246,0.92);
+  box-shadow: 0 1px 4px rgba(107,58,69,0.25);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.picker-badge-star { left: 5px; color: var(--rose); }
+.picker-badge-heart { right: 5px; color: var(--rose); }
 
     .picker-card img {
       width: 100%;
@@ -839,16 +859,56 @@ async function checkAllowed(email) {
 // ── Panty picker ──────────────────────────────────────────────
 let allPanties = [];
 let selectedPantyId = null;
+let newestCreatedDate = null;
+let topTenIds = new Set();
 
+async function computeTopTenIds() {
+  const [wearCountsRes, pantiesRes, wearHistoryRes] = await Promise.all([
+    client.from('panty_wear_counts').select('id, wears'),
+    client.from('panties').select('id'),
+    client.from('wear_history').select('panty_id, worn_at').order('worn_at', { ascending: false }),
+  ]);
+
+  const wearCounts = wearCountsRes.data || [];
+  const panties = pantiesRes.data || [];
+  const wearHistory = wearHistoryRes.data || [];
+
+  const lastWornMap = {};
+  wearHistory.forEach(row => {
+    if (!lastWornMap[row.panty_id]) {
+      lastWornMap[row.panty_id] = row.worn_at;
+    }
+  });
+
+  const merged = panties.map(p => {
+    const wear = wearCounts.find(w => w.id === p.id);
+    return {
+      id: p.id,
+      wears: wear?.wears || 0,
+      lastWorn: lastWornMap[p.id] || null
+    };
+  });
+
+  merged.sort((a, b) => {
+    if (b.wears !== a.wears) return b.wears - a.wears;
+    const dateA = a.lastWorn ? new Date(a.lastWorn) : 0;
+    const dateB = b.lastWorn ? new Date(b.lastWorn) : 0;
+    return dateB - dateA;
+  });
+
+  return new Set(merged.slice(0, 10).map(p => String(p.id)));
+}  
 async function loadPantyPicker() {
-  const [pantiesRes, brandsRes, stylesRes, colorsRes] = await Promise.all([
+  const [pantiesRes, brandsRes, stylesRes, colorsRes, newestRes, topTenSet] = await Promise.all([
     client.from('panties')
-      .select('id, name, image_url, color, brand_id, style_id, brands(id,name), styles(id,name)')
+      .select('id, name, image_url, color, brand_id, style_id, created_at, brands(id,name), styles(id,name)')
       .eq('status', 'Clean')
       .order('name'),
     client.from('brands').select('id, name').order('name'),
     client.from('styles').select('id, name').order('name'),
     client.from('panties').select('color').eq('status', 'Clean').order('color'),
+    client.from('panties').select('created_at').order('created_at', { ascending: false }).limit(1),
+    computeTopTenIds(),
   ]);
 
   if (pantiesRes.error) {
@@ -857,6 +917,8 @@ async function loadPantyPicker() {
   }
 
   allPanties = pantiesRes.data || [];
+  newestCreatedDate = newestRes.data?.[0]?.created_at ? newestRes.data[0].created_at.slice(0, 10) : null;
+  topTenIds = topTenSet;
 
   // Populate filter dropdowns
   populatePickerFilter('pickerBrand', brandsRes.data || [], 'name', 'All Brands');
@@ -908,15 +970,22 @@ function renderPickerGrid() {
     return;
   }
 
-  grid.innerHTML = filtered.map(p => `
+grid.innerHTML = filtered.map(p => {
+    const isNew = newestCreatedDate && p.created_at && p.created_at.slice(0, 10) === newestCreatedDate;
+    const isTopTen = topTenIds.has(String(p.id));
+
+    return `
     <div class="picker-card${p.id === selectedPantyId ? ' selected' : ''}"
          data-id="${p.id}" data-name="${p.name.replace(/"/g, '&quot;')}">
       <div class="picker-card-img">
+        ${isNew ? '<span class="picker-badge picker-badge-star" title="Newly added">&#9733;</span>' : ''}
+        ${isTopTen ? '<span class="picker-badge picker-badge-heart" title="Top 10 most worn">&#9829;</span>' : ''}
         <img src="${p.image_url}" alt="${p.name}" loading="lazy" />
       </div>
       <div class="picker-card-name">${p.name}</div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 document.addEventListener('click', (e) => {
