@@ -697,7 +697,7 @@ async function loadRecentMoods() {
 
   list.innerHTML = data.map(row => {
     const panty = row.wear_history?.panties || {};
-    const dateStr = new Date(row.created_at).toLocaleDateString(undefined, {
+    const dateStr = new Date(row.recorded_at).toLocaleDateString(undefined, {
       weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
     });
     const tags = [
