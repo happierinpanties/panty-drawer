@@ -675,13 +675,13 @@ async function loadRecentMoods() {
       state,
       day_rating,
       notes,
-      created_at,
+      recorded_at,
       wear_history (
         worn_at,
         panties ( name, image_url )
       )
     `)
-    .order('created_at', { ascending: false })
+    .order('recorded_at', { ascending: false })
     .limit(10);
 
   if (error) {
