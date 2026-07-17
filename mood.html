@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mood Log</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --blush:   #f5e8e4;
+      --rose:    #c9847a;
+      --plum:    #6b3a45;
+      --ivory:   #fdf8f6;
+      --stone:   #8a7570;
+      --ink:     #2e1f22;
+      --border:  #e8d8d3;
+      --card-bg: #ffffff;
+      --nav-h:   64px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--ivory);
+      color: var(--ink);
+      font-weight: 300;
+    }
+
+    /* ── Nav ─────────────────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(253,248,246,0.96);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      height: var(--nav-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+    }
+
+    .nav-wordmark {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      color: var(--plum);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      list-style: none;
+      position: relative;
+    }
+
+    .nav-links > li { position: relative; }
+
+    .nav-links > li > a,
+    .nav-links > li > button {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 16px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--stone);
+      text-decoration: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .nav-links > li > a:hover,
+    .nav-links > li > button:hover { color: var(--plum); }
+
+    .nav-links > li > a.active {
+      color: var(--plum);
+      border-bottom: 2px solid var(--rose);
+    }
+
+    .dropdown {
+      position: absolute;
+      top: calc(100% + 1px);
+      right: 0;
+      min-width: 180px;
+      background: var(--ivory);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--rose);
+      box-shadow: 0 8px 24px rgba(107,58,69,0.08);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-4px);
+      transition: opacity 0.18s, transform 0.18s;
+      list-style: none;
+    }
+
+    .nav-links > li:hover .dropdown,
+    .nav-links > li:focus-within .dropdown {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateY(0);
+    }
+
+    .dropdown li a {
+      display: block;
+      padding: 12px 20px;
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--stone);
+      text-decoration: none;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .dropdown li a:hover { background: var(--blush); color: var(--plum); }
+    .dropdown li a.active { color: var(--plum); }
+
+    .chevron { font-size: 9px; transition: transform 0.2s; }
+    .nav-links > li:hover .chevron { transform: rotate(180deg); }
+
+    /* Auth area in nav */
+    .auth-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: 8px;
+      padding-left: 16px;
+      border-left: 1px solid var(--border);
+    }
+
+    .auth-email {
+      font-size: 11px;
+      color: var(--stone);
+      letter-spacing: 0.04em;
+    }
+
+    .btn-text {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--rose);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px 10px;
+      transition: color 0.2s;
+    }
+
+    .btn-text:hover { color: var(--plum); }
+
+    /* ── Page Header ─────────────────────────────────────────── */
+    .page-header {
+      text-align: center;
+      padding: 56px 24px 40px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .page-header .eyebrow {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--rose);
+      margin-bottom: 14px;
+    }
+
+    .page-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(34px, 5vw, 52px);
+      font-weight: 400;
+      color: var(--plum);
+      line-height: 1.15;
+    }
+
+    .page-header h1 em { font-style: italic; }
+
+    /* ── Layout ──────────────────────────────────────────────── */
+    .content {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 40px 32px 80px;
+    }
+
+    .section { margin-top: 48px; }
+    .section:first-child { margin-top: 0; }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--plum);
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    /* ── Current panty card (visible to everyone) ───────────── */
+    .current-panty-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--rose);
+      padding: 28px;
+      text-align: center;
+    }
+
+    .current-panty-wrapper {
+      max-width: 160px;
+      margin: 0 auto 12px;
+    }
+
+    .current-panty-wrapper img {
+      width: 100%;
+      display: block;
+      border: 1px solid var(--border);
+    }
+
+    .item-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      color: var(--ink);
+      margin-top: 4px;
+    }
+
+    .item-meta {
+      font-size: 11px;
+      color: var(--stone);
+      margin-top: 4px;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Sign-in card (shown when logged out) ───────────────── */
+    .signin-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--rose);
+      padding: 40px;
+      text-align: center;
+      max-width: 420px;
+      margin: 0 auto;
+    }
+
+    .signin-card p {
+      font-size: 13px;
+      color: var(--stone);
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .signin-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    input[type="email"],
+    input[type="text"],
+    input[type="number"] {
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 11px 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      color: var(--ink);
+      background: var(--ivory);
+      width: 100%;
+    }
+
+    input[type="email"]:focus,
+    input[type="text"]:focus,
+    input[type="number"]:focus {
+      outline: none;
+      border-color: var(--rose);
+    }
+
+    .btn-primary {
+      background: var(--plum);
+      color: #fff;
+      border: none;
+      border-radius: 2px;
+      padding: 12px 20px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover { background: var(--rose); }
+    .btn-primary:disabled { background: var(--border); cursor: default; }
+
+    .signin-status {
+      font-size: 12px;
+      color: var(--stone);
+      margin-top: 14px;
+      min-height: 16px;
+    }
+
+    .signin-status.success { color: var(--plum); }
+    .signin-status.error { color: #a33; }
+
+    /* ── Mood form ────────────────────────────────────────────── */
+    .mood-form {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 28px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    .form-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--stone);
+    }
+
+    select, textarea {
+      appearance: none;
+      -webkit-appearance: none;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 10px 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      color: var(--ink);
+      background: var(--ivory);
+    }
+
+    select {
+      background: var(--ivory) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a7570'/%3E%3C/svg%3E") no-repeat right 14px center;
+      padding-right: 32px;
+    }
+
+    select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--rose);
+    }
+
+    textarea { resize: vertical; min-height: 60px; font-family: 'Inter', sans-serif; }
+
+    .form-submit-row {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .form-status {
+      font-size: 12px;
+      color: var(--stone);
+    }
+
+    .form-status.success { color: var(--plum); }
+    .form-status.error { color: #a33; }
+
+    /* ── Recent mood list ────────────────────────────────────── */
+    .mood-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .mood-row {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .mood-thumb {
+      width: 44px;
+      height: 58px;
+      flex-shrink: 0;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--blush);
+    }
+
+    .mood-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .mood-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .mood-date {
+      font-family: 'Playfair Display', serif;
+      font-size: 15px;
+      color: var(--plum);
+    }
+
+    .mood-tags {
+      font-size: 11px;
+      color: var(--stone);
+      margin-top: 2px;
+      letter-spacing: 0.03em;
+    }
+
+    .mood-notes {
+      font-size: 11px;
+      font-style: italic;
+      color: var(--stone);
+      margin-top: 3px;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 40px 24px;
+      color: var(--stone);
+    }
+
+    .empty p {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 16px;
+    }
+
+    /* ── Footer ──────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 32px;
+      text-align: center;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--stone);
+    }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 700px) {
+      nav { padding: 0 16px; }
+      .content { padding: 24px 16px 60px; }
+      .mood-form { grid-template-columns: 1fr; }
+      .mood-row { flex-wrap: wrap; }
+      .auth-email { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-wordmark" href="https://www.panty-drawer.com">The Drawer</a>
+  <ul class="nav-links">
+    <li><a href="https://www.panty-drawer.com">Drawer</a></li>
+    <li>
+      <button aria-haspopup="true">Pages <span class="chevron">&#9662;</span></button>
+      <ul class="dropdown">
+        <li><a href="/stats">Panty Stats</a></li>
+        <li><a href="/hamper">Hamper</a></li>
+        <li><a href="/retired">Retired Panties</a></li>
+        <li><a href="/schedule">Wear Schedule</a></li>
+        <li><a href="/mood" class="active">Mood Log</a></li>
+      </ul>
+    </li>
+    <li class="auth-area" id="authArea">
+      <!-- populated by JS -->
+    </li>
+  </ul>
+</nav>
+
+<header class="page-header">
+  <p class="eyebrow">Feelings & Fabric</p>
+  <h1>Mood <em>Log</em></h1>
+</header>
+
+<div class="content">
+
+  <!-- Current panty — visible to everyone, read-only -->
+  <div class="section">
+    <div class="section-title">Currently Worn</div>
+    <div class="current-panty-card" id="currentPanty">Loading...</div>
+  </div>
+
+  <!-- Signed-out state -->
+  <div class="section" id="signedOutSection" style="display:none;">
+    <div class="signin-card">
+      <p>Sign in to log your mood against the panty you're currently wearing.</p>
+      <form class="signin-form" id="signinForm">
+        <input type="email" id="signinEmail" placeholder="you@example.com" required />
+        <button type="submit" class="btn-primary">Send Magic Link</button>
+      </form>
+      <div class="signin-status" id="signinStatus"></div>
+    </div>
+  </div>
+
+  <!-- Signed-in state -->
+  <div id="signedInContent" style="display:none;">
+
+    <div class="section">
+      <div class="section-title">Log Your Mood</div>
+      <form class="mood-form" id="moodForm">
+        <div class="form-group">
+          <label class="form-label" for="stateInput">State <span style="text-transform:none; font-weight:400;">(optional)</span></label>
+          <input type="text" id="stateInput" placeholder="e.g. relaxed, anxious, playful..." />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="ratingInput">Day Rating <span style="text-transform:none; font-weight:400;">(optional)</span></label>
+          <select id="ratingInput">
+            <option value="">No rating</option>
+            <option value="1">1 — Rough</option>
+            <option value="2">2</option>
+            <option value="3">3 — Okay</option>
+            <option value="4">4</option>
+            <option value="5">5 — Great</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label class="form-label" for="notesInput">Notes <span style="text-transform:none; font-weight:400;">(optional)</span></label>
+          <textarea id="notesInput" placeholder="Anything else worth noting..."></textarea>
+        </div>
+        <div class="form-submit-row">
+          <button type="submit" class="btn-primary" id="moodSubmitBtn">Save Mood</button>
+          <span class="form-status" id="moodStatus"></span>
+        </div>
+      </form>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Recent Entries</div>
+      <div class="mood-list" id="moodList"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<footer>
+  &copy; The Drawer &nbsp;&middot;&nbsp; Mood Log
+</footer>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const client = createClient(
+  'https://rkocfrsaeeyxgfdxeiqz.supabase.co',
+  'sb_publishable_yp7myP1S5wmYLQrgwNWxhg_IfZHdeZj'
+);
+
+let currentSession = null;
+
+// ── Auth UI rendering ─────────────────────────────────────────
+function renderAuthArea() {
+  const area = document.getElementById('authArea');
+  if (currentSession) {
+    area.innerHTML = `
+      <span class="auth-email">${currentSession.user.email}</span>
+      <button class="btn-text" id="signOutBtn">Sign Out</button>
+    `;
+    document.getElementById('signOutBtn').addEventListener('click', signOut);
+  } else {
+    area.innerHTML = `<a href="#" class="btn-text" id="navSignInLink">Sign In</a>`;
+    document.getElementById('navSignInLink').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('signedOutSection').scrollIntoView({ behavior: 'smooth' });
+    });
+  }
+}
+
+function renderPageState() {
+  document.getElementById('signedOutSection').style.display = currentSession ? 'none' : 'block';
+  document.getElementById('signedInContent').style.display = currentSession ? 'block' : 'none';
+}
+
+// ── Sign in / out ─────────────────────────────────────────────
+document.getElementById('signinForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('signinEmail').value.trim();
+  const statusEl = document.getElementById('signinStatus');
+  statusEl.textContent = 'Sending...';
+  statusEl.className = 'signin-status';
+
+  const { error } = await client.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href }
+  });
+
+  if (error) {
+    if (error.code === 'over_email_send_rate_limit' || error.status === 429) {
+      statusEl.textContent = 'Too many attempts right now — please try again in a bit.';
+    } else {
+      // Generic on purpose: covers allowlist rejection and any other failure
+      // without revealing whether the email is approved or not.
+      statusEl.textContent = 'Something went wrong. Please try again.';
+    }
+    statusEl.className = 'signin-status error';
+    console.error('Sign-in error:', JSON.stringify(error));
+  } else {
+    statusEl.textContent = 'Check your email for a sign-in link.';
+    statusEl.className = 'signin-status success';
+  }
+});
+
+async function signOut() {
+  await client.auth.signOut();
+  currentSession = null;
+  renderAuthArea();
+  renderPageState();
+}
+
+// ── Current panty (visible to everyone) ─────────────────────────
+async function loadCurrentPanty() {
+  const { data, error } = await client
+    .from('wear_history')
+    .select('worn_at, created_at, panties ( id, image_url, name )')
+    .order('worn_at', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (error) {
+    console.error('Current panty error:', JSON.stringify(error));
+    document.getElementById('currentPanty').textContent = 'Could not load.';
+    return;
+  }
+
+  if (data && data.length > 0 && data[0].panties) {
+    const panty = data[0].panties;
+    document.getElementById('currentPanty').innerHTML = `
+      <div class="current-panty-wrapper">
+        <img src="${panty.image_url}" alt="${panty.name}" />
+      </div>
+      <div class="item-name">${panty.name}</div>
+      <div class="item-meta">This is what your mood entry will attach to</div>`;
+  } else {
+    document.getElementById('currentPanty').innerHTML = `
+      <div class="item-name">None found</div>
+      <div class="item-meta">Log a wear first, then come back to record your mood</div>`;
+  }
+}
+
+// ── Recent mood entries (visible to everyone) ───────────────────
+async function loadRecentMoods() {
+  const list = document.getElementById('moodList');
+
+  const { data, error } = await client
+    .from('wear_mood')
+    .select(`
+      id,
+      state,
+      day_rating,
+      notes,
+      created_at,
+      wear_history (
+        worn_at,
+        panties ( name, image_url )
+      )
+    `)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  if (error) {
+    list.innerHTML = '<div class="empty"><p>Could not load recent entries.</p></div>';
+    console.error('Mood list error:', JSON.stringify(error));
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.innerHTML = '<div class="empty"><p>No mood entries yet.</p></div>';
+    return;
+  }
+
+  list.innerHTML = data.map(row => {
+    const panty = row.wear_history?.panties || {};
+    const dateStr = new Date(row.created_at).toLocaleDateString(undefined, {
+      weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+    });
+    const tags = [
+      row.state ? row.state : null,
+      row.day_rating ? `Rated ${row.day_rating}/5` : null
+    ].filter(Boolean).join(' · ');
+
+    return `
+      <div class="mood-row">
+        <div class="mood-thumb">
+          <img src="${panty.image_url || ''}" alt="${panty.name || ''}" loading="lazy" />
+        </div>
+        <div class="mood-main">
+          <div class="mood-date">${dateStr}</div>
+          <div class="mood-tags">${panty.name || 'Unknown panty'}${tags ? ' · ' + tags : ''}</div>
+          ${row.notes ? `<div class="mood-notes">${row.notes}</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── Log mood ─────────────────────────────────────────────────────
+document.getElementById('moodForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!currentSession) return;
+
+  const statusEl = document.getElementById('moodStatus');
+  const submitBtn = document.getElementById('moodSubmitBtn');
+
+  const stateVal = document.getElementById('stateInput').value.trim();
+  const ratingVal = document.getElementById('ratingInput').value;
+  const notesVal = document.getElementById('notesInput').value.trim();
+
+  submitBtn.disabled = true;
+  statusEl.textContent = 'Saving...';
+  statusEl.className = 'form-status';
+
+  const { error } = await client.rpc('log_mood_for_current_wear', {
+    p_state: stateVal || null,
+    p_day_rating: ratingVal ? Number(ratingVal) : null,
+    p_notes: notesVal || null
+  });
+
+  submitBtn.disabled = false;
+
+  if (error) {
+    statusEl.textContent = 'Could not save — this account may not be approved yet.';
+    statusEl.className = 'form-status error';
+    console.error('Log mood error:', JSON.stringify(error));
+    return;
+  }
+
+  statusEl.textContent = 'Saved!';
+  statusEl.className = 'form-status success';
+  document.getElementById('stateInput').value = '';
+  document.getElementById('ratingInput').value = '';
+  document.getElementById('notesInput').value = '';
+  loadRecentMoods();
+  setTimeout(() => { statusEl.textContent = ''; }, 2000);
+});
+
+// ── Init ──────────────────────────────────────────────────────
+async function init() {
+  const { data: { session } } = await client.auth.getSession();
+  currentSession = session;
+  renderAuthArea();
+  renderPageState();
+
+  loadCurrentPanty();
+  loadRecentMoods();
+
+  client.auth.onAuthStateChange((_event, session) => {
+    currentSession = session;
+    renderAuthArea();
+    renderPageState();
+  });
+}
+
+init();
+</script>
+</body>
+</html>
