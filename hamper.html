@@ -531,20 +531,23 @@ footer {
 
 <!-- ── Navigation ───────────────────────────────────────────── -->
 <nav>
-  <a class="nav-wordmark" href="/">The Drawer</a>
+  <a class="nav-wordmark" href="https://www.panty-drawer.com">The Drawer</a>
   <ul class="nav-links">
     <li><a href="https://www.panty-drawer.com">Drawer</a></li>
     <li>
-      <button aria-haspopup="true">Pages <span class="chevron">▾</span></button>
+      <button aria-haspopup="true">Pages <span class="chevron">&#9662;</span></button>
       <ul class="dropdown">
         <li><a href="/stats">Panty Stats</a></li>
         <li><a href="/hamper" class="active">Hamper</a></li>
         <li><a href="/retired">Retired Panties</a></li>
+	<li><a href="/chopping-block">Chopping Block</a><li>
+        <li data-auth="required"><a href="/schedule">Wear Schedule</a></li>
+        <li data-auth="required"><a href="/cage">Cage</a></li>
+        <li data-auth="required"><a href="/rewards">Rewards</a></li>
+	<li data-auth="required"><a href="/mood">Mood</a><li>
       </ul>
     </li>
-    <li class="auth-area" id="authArea">
-      <!-- populated by JS -->
-    </li>
+    <li class="auth-area" id="authArea"><!-- populated by nav-auth.js --></li>
   </ul>
 </nav>
 
