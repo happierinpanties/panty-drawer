@@ -38,7 +38,117 @@
       color: var(--ink);
       font-weight: 300;
     }
+/* ── Wear toggle ──────────────────────────────────────────── */
+.wear-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.wear-toggle input { display: none; }
+.wear-toggle-track {
+  width: 34px;
+  height: 18px;
+  background: var(--border);
+  border-radius: 20px;
+  position: relative;
+  transition: background 0.2s;
+}
+.wear-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+.wear-toggle input:checked + .wear-toggle-track {
+  background: var(--rose);
+}
+.wear-toggle input:checked + .wear-toggle-track .wear-toggle-thumb {
+  transform: translateX(16px);
+}
+.wear-toggle-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--stone);
+}
+.copy-btn.wear-mode {
+  border-color: var(--rose);
+  color: var(--plum);
+}
+.copy-btn.wear-mode:hover {
+  background: var(--rose);
+  color: #fff;
+}
 
+/* ── Wear confirmation modal (mirrors chopping-block) ──────── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(46, 31, 34, 0.45);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.modal-overlay.open { display: flex; }
+.modal-card {
+  background: var(--card-bg);
+  border-top: 3px solid var(--rose);
+  padding: 32px;
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+}
+.modal-eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rose);
+  margin-bottom: 10px;
+}
+.modal-card h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--plum);
+  margin-bottom: 12px;
+  line-height: 1.3;
+}
+.modal-body {
+  font-size: 13px;
+  color: var(--stone);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.btn-primary {
+  background: var(--plum);
+  color: #fff;
+  border: none;
+  border-radius: 2px;
+  padding: 12px 20px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-primary:hover { background: var(--rose); }
+	  
     /* ── Nav ─────────────────────────────────────────────────── */
     nav {
       position: sticky;
@@ -540,6 +650,13 @@
       </select>
     </div>
   </div>
+	<div class="wear-toggle-wrap" id="wearToggleWrap" style="display:none;">
+  <label class="wear-toggle">
+    <input type="checkbox" id="wearModeToggle" />
+    <span class="wear-toggle-track"><span class="wear-toggle-thumb"></span></span>
+    <span class="wear-toggle-label">Wear Mode</span>
+  </label>
+</div>
 </div>
 
 <!-- ── Result count ─────────────────────────────────────────── -->
@@ -553,7 +670,17 @@
     <!-- populated by JS -->
   </div>
 </div>
-
+<div class="modal-overlay" id="wearModal">
+  <div class="modal-card">
+    <p class="modal-eyebrow">Confirm Wear</p>
+    <h2 id="wearModalItemName"></h2>
+    <p class="modal-body">This logs today's wear and moves it to the Hamper.</p>
+    <div class="modal-actions">
+      <button class="btn-text" id="wearModalCancelBtn">Cancel</button>
+      <button class="btn-primary wear-modal-confirm" id="wearModalConfirmBtn">Yes, Wearing It</button>
+    </div>
+  </div>
+</div>
 <footer>
   &copy; The Drawer &nbsp;·&nbsp; All items clean &amp; accounted for
 </footer>
@@ -566,6 +693,30 @@ const client = createClient(
   'sb_publishable_yp7myP1S5wmYLQrgwNWxhg_IfZHdeZj'
 );
 
+let currentSession = null;
+let isAllowed = false;
+let wearMode = false;
+let pendingWearId = null;
+let pendingWearBtn = null;
+
+async function refreshAuthState() {
+  const { data: { session } } = await client.auth.getSession();
+  currentSession = session;
+  if (!session) { isAllowed = false; }
+  else {
+    const { data, error } = await client.rpc('is_allowed_user');
+    if (error) console.error('Allowlist check error:', JSON.stringify(error));
+    isAllowed = !!data;
+  }
+  document.getElementById('wearToggleWrap').style.display = isAllowed ? 'flex' : 'none';
+  if (!isAllowed) {
+    wearMode = false;
+    document.getElementById('wearModeToggle').checked = false;
+  }
+}
+
+client.auth.onAuthStateChange(() => refreshAuthState());	
+	
 // ── Pip helpers ───────────────────────────────────────────────
 function renderPips(wears) {
   const MAX_PIPS = 10;
@@ -726,7 +877,7 @@ async function loadPanties() {
             <div class="wear-pip-row" title="Wear history (up to 10)">
               ${renderPips(wears)}
             </div>
-            <button class="copy-btn" data-name="${p.name.replace(/"/g, '&quot;')}">Copy</button>
+            <button class="copy-btn${wearMode ? ' wear-mode' : ''}" data-id="${p.id}" data-name="${p.name.replace(/"/g, '&quot;')}">${wearMode ? 'Wear' : 'Copy'}</button>
           </div>
         </div>
       </div>`;
@@ -737,6 +888,15 @@ async function loadPanties() {
 document.getElementById('grid').addEventListener('click', e => {
   const btn = e.target.closest('.copy-btn');
   if (!btn) return;
+
+  if (wearMode) {
+    pendingWearId = btn.dataset.id;
+    pendingWearBtn = btn;
+    document.getElementById('wearModalItemName').textContent = btn.dataset.name;
+    document.getElementById('wearModal').classList.add('open');
+    return;
+  }
+
   const name = btn.dataset.name;
   navigator.clipboard.writeText(name).then(() => {
     btn.textContent = 'Copied!';
@@ -748,8 +908,47 @@ document.getElementById('grid').addEventListener('click', e => {
   });
 });
 
+document.getElementById('wearModeToggle').addEventListener('change', e => {
+  wearMode = e.target.checked;
+  loadPanties();
+});
+
+document.getElementById('wearModalCancelBtn').addEventListener('click', closeWearModal);
+document.getElementById('wearModal').addEventListener('click', e => {
+  if (e.target.id === 'wearModal') closeWearModal();
+});
+
+function closeWearModal() {
+  document.getElementById('wearModal').classList.remove('open');
+  pendingWearId = null;
+  pendingWearBtn = null;
+}
+
+document.getElementById('wearModalConfirmBtn').addEventListener('click', async () => {
+  if (!pendingWearId) return;
+  const id = pendingWearId;
+  const btn = pendingWearBtn;
+  closeWearModal();
+
+  btn.disabled = true;
+  btn.textContent = 'Logging...';
+
+  const { error } = await client.rpc('wear_panty_by_id', { p_id: id, p_worn_at: new Date().toISOString().split('T')[0] });
+
+  if (error) {
+    console.error('Wear error:', JSON.stringify(error));
+    btn.disabled = false;
+    btn.textContent = 'Wear';
+    alert('Could not log this wear — your account may not be approved, or something went wrong.');
+    return;
+  }
+
+  loadPanties();
+});
+
 document.getElementById('sort').addEventListener('change', loadPanties);
 
+refreshAuthState();	
 loadFilters();
 loadPanties();
 </script>
