@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sign In · The Drawer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+<link rel="manifest" href="/manifest.json" />
+<link rel="apple-touch-icon" href="/icons/icon-180.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="The Drawer" />
+<meta name="theme-color" content="#c9847a" />
+<style>
+  :root {
+    --blush: #f5e8e4; --rose: #c9847a; --plum: #6b3a45;
+    --ivory: #fdf8f6; --stone: #8a7570; --ink: #2e1f22; --border: #e8d8d3;
+    --card-bg: #ffffff;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--ivory);
+    color: var(--ink);
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .signin-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--rose);
+    padding: 40px 32px;
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+  }
+  .signin-card h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 400;
+    color: var(--plum);
+    margin-bottom: 8px;
+  }
+  .signin-card p {
+    font-size: 13px;
+    color: var(--stone);
+    margin-bottom: 24px;
+    line-height: 1.6;
+  }
+  form { display: flex; flex-direction: column; gap: 12px; }
+  input {
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 11px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--ivory);
+    text-align: center;
+  }
+  input:focus { outline: none; border-color: var(--rose); }
+  input#codeInput { letter-spacing: 0.3em; font-size: 18px; }
+  button {
+    background: var(--plum);
+    color: #fff;
+    border: none;
+    border-radius: 2px;
+    padding: 12px 20px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  button:hover { background: var(--rose); }
+  button:disabled { background: var(--border); cursor: default; }
+  .status {
+    font-size: 12px;
+    color: var(--stone);
+    margin-top: 14px;
+    min-height: 16px;
+  }
+  .status.error { color: #a33; }
+  .status.success { color: var(--plum); }
+  .link-btn {
+    background: none;
+    border: none;
+    color: var(--stone);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: none;
+    cursor: pointer;
+    margin-top: 4px;
+    padding: 4px;
+  }
+  .link-btn:hover { color: var(--plum); background: none; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div class="signin-card">
+  <h1>Sign In</h1>
+  <p id="signinPrompt">Enter your email to receive a sign-in code.</p>
+
+  <form id="emailForm">
+    <input type="email" id="emailInput" placeholder="you@example.com" required autocomplete="email" />
+    <button type="submit" id="sendBtn">Send Code</button>
+  </form>
+
+  <form id="codeForm" class="hidden">
+    <input type="text" id="codeInput" placeholder="000000" inputmode="numeric" pattern="[0-9]*" maxlength="6" required autocomplete="one-time-code" />
+    <button type="submit" id="verifyBtn">Verify</button>
+    <button type="button" class="link-btn" id="backBtn">Use a different email</button>
+  </form>
+
+  <div class="status" id="statusMsg"></div>
+</div>
+
+<script type="module">
+import { client } from '/js/supabase-client.js';
+
+const params = new URLSearchParams(window.location.search);
+const redirectTo = params.get('redirect') || '/';
+
+const emailForm = document.getElementById('emailForm');
+const codeForm = document.getElementById('codeForm');
+const emailInput = document.getElementById('emailInput');
+const codeInput = document.getElementById('codeInput');
+const statusMsg = document.getElementById('statusMsg');
+const prompt = document.getElementById('signinPrompt');
+const sendBtn = document.getElementById('sendBtn');
+const verifyBtn = document.getElementById('verifyBtn');
+const backBtn = document.getElementById('backBtn');
+
+let pendingEmail = '';
+
+function setStatus(text, type = '') {
+  statusMsg.textContent = text;
+  statusMsg.className = 'status' + (type ? ' ' + type : '');
+}
+
+// If already signed in and allowed, skip straight through
+(async () => {
+  const { data: { session } } = await client.auth.getSession();
+  if (session) {
+    const { data: allowed } = await client.rpc('is_allowed_user');
+    if (allowed) {
+      window.location.replace(redirectTo);
+    }
+  }
+})();
+
+emailForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = emailInput.value.trim();
+  sendBtn.disabled = true;
+  setStatus('Sending code...');
+
+  const { error } = await client.auth.signInWithOtp({ email });
+
+  sendBtn.disabled = false;
+
+  if (error) {
+    if (error.status === 429) {
+      setStatus('Too many attempts — please try again in a bit.', 'error');
+    } else {
+      setStatus('Something went wrong. Please try again.', 'error');
+    }
+    console.error('Sign-in error:', JSON.stringify(error));
+    return;
+  }
+
+  pendingEmail = email;
+  prompt.textContent = `Enter the code sent to ${email}.`;
+  emailForm.classList.add('hidden');
+  codeForm.classList.remove('hidden');
+  setStatus('');
+  codeInput.focus();
+});
+
+codeForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const code = codeInput.value.trim();
+  verifyBtn.disabled = true;
+  setStatus('Verifying...');
+
+  const { error } = await client.auth.verifyOtp({
+    email: pendingEmail,
+    token: code,
+    type: 'email'
+  });
+
+  verifyBtn.disabled = false;
+
+  if (error) {
+    setStatus("That code didn't work — check it and try again.", 'error');
+    console.error('Verify error:', JSON.stringify(error));
+    return;
+  }
+
+  const { data: allowed, error: allowedError } = await client.rpc('is_allowed_user');
+  if (allowedError || !allowed) {
+    setStatus("This account isn't approved for access.", 'error');
+    await client.auth.signOut();
+    return;
+  }
+
+  setStatus('Success — redirecting...', 'success');
+  window.location.replace(redirectTo);
+});
+
+backBtn.addEventListener('click', () => {
+  codeForm.classList.add('hidden');
+  emailForm.classList.remove('hidden');
+  prompt.textContent = 'Enter your email to receive a sign-in code.';
+  setStatus('');
+  emailInput.focus();
+});
+</script>
+</body>
+</html>
