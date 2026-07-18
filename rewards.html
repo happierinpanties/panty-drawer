@@ -963,6 +963,7 @@ const client = createClient(
 );
 
 let currentSession = null;
+let isAllowed = false;
 let pendingTaskId = null;
 let pendingTaskTitle = null;
 let pendingType = null; // 'task' | 'reward'
@@ -989,6 +990,17 @@ function fmtDate(d) {
 }
 
 // ── Auth ──────────────────────────────────────────────────────
+async function refreshAllowedStatus() {
+  if (!currentSession) { isAllowed = false; return; }
+  const { data, error } = await client.rpc('is_allowed_user');
+  if (error) {
+    console.error('Allowlist check error:', JSON.stringify(error));
+    isAllowed = false;
+    return;
+  }
+  isAllowed = !!data;
+}
+
 function renderAuthArea() {
   const area = document.getElementById('authArea');
   if (currentSession) {
@@ -1574,7 +1586,7 @@ document.getElementById('logList').addEventListener('click', async e => {
 
 // ── Management UI visibility ──────────────────────────────────
 function renderMgmtSections() {
-  const visible = !!currentSession;
+  const visible = !!currentSession && isAllowed;
   document.querySelectorAll('.mgmt-section').forEach(el => {
     el.classList.toggle('visible', visible);
   });
@@ -1918,6 +1930,7 @@ document.addEventListener('click', async e => {
 async function init() {
   const { data: { session } } = await client.auth.getSession();
   currentSession = session;
+  await refreshAllowedStatus();
   renderAuthArea();
   renderPageAuthState();
 
@@ -1929,8 +1942,9 @@ async function init() {
   loadRedemptionList();
   renderMgmtSections();
 
-  client.auth.onAuthStateChange((_event, session) => {
+  client.auth.onAuthStateChange(async (_event, session) => {
     currentSession = session;
+    await refreshAllowedStatus();
     renderAuthArea();
     renderPageAuthState();
     loadLog();
