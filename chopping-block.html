@@ -317,6 +317,60 @@ input[type="email"]:focus { outline: none; border-color: var(--rose); }
 }
 .retire-btn.locked:hover { background: var(--blush); color: var(--stone); }
 
+/* ── Retire confirmation modal ───────────────────────────── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(46, 31, 34, 0.45);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.modal-overlay.open { display: flex; }
+.modal-card {
+  background: var(--card-bg);
+  border-top: 3px solid #a33;
+  padding: 32px;
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+}
+.modal-eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #a33;
+  margin-bottom: 10px;
+}
+.modal-card h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--plum);
+  margin-bottom: 12px;
+  line-height: 1.3;
+}
+.modal-body {
+  font-size: 13px;
+  color: var(--stone);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.modal-confirm {
+  background: #a33;
+}
+.modal-confirm:hover {
+  background: #8a2a2a;
+}	  
+	  
 /* Empty state */
 .empty { grid-column: 1 / -1; text-align: center; padding: 64px 24px; color: var(--stone); }
 .empty p { font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; }
@@ -428,7 +482,19 @@ footer {
     <!-- populated by JS -->
   </div>
 </div>
-
+	
+<!-- ── Retire confirmation modal ─────────────────────────────── -->
+<div class="modal-overlay" id="retireModal">
+  <div class="modal-card">
+    <p class="modal-eyebrow">Confirm Retirement</p>
+    <h2 id="modalItemName"></h2>
+    <p class="modal-body">This moves it to Retired. You can still view it there, but it'll leave the active drawer.</p>
+    <div class="modal-actions">
+      <button class="btn-text" id="modalCancelBtn">Cancel</button>
+      <button class="btn-primary modal-confirm" id="modalConfirmBtn">Yes, Retire It</button>
+    </div>
+  </div>
+</div>
 <footer>
   &copy; The Drawer &nbsp;·&nbsp; Be honest with yourself
 </footer>
@@ -621,19 +687,48 @@ function renderGrid() {
 }
 
 // ── Retire action ─────────────────────────────────────────────
-async function retirePanty(id, btn) {
+let pendingRetireId = null;
+let pendingRetireBtn = null;
+
+document.getElementById('grid').addEventListener('click', e => {
+  const btn = e.target.closest('.retire-btn');
+  if (!btn) return;
+
   if (!currentSession) {
     document.getElementById('signedOutSection').scrollIntoView({ behavior: 'smooth' });
     return;
   }
 
+  const id = btn.dataset.id;
+  const item = candidates.find(c => c.id === id);
+  pendingRetireId = id;
+  pendingRetireBtn = btn;
+
+  document.getElementById('modalItemName').textContent = item ? item.name : 'this item';
+  document.getElementById('retireModal').classList.add('open');
+});
+
+document.getElementById('modalCancelBtn').addEventListener('click', closeModal);
+document.getElementById('retireModal').addEventListener('click', e => {
+  if (e.target.id === 'retireModal') closeModal(); // click outside card
+});
+
+function closeModal() {
+  document.getElementById('retireModal').classList.remove('open');
+  pendingRetireId = null;
+  pendingRetireBtn = null;
+}
+
+document.getElementById('modalConfirmBtn').addEventListener('click', async () => {
+  if (!pendingRetireId) return;
+  closeModal();
+  await retirePanty(pendingRetireId, pendingRetireBtn);
+});
+
+async function retirePanty(id, btn) {
   btn.disabled = true;
   btn.textContent = 'Retiring...';
 
-  // .select() is required here — without it, an RLS-denied update returns
-  // { error: null, data: null }. A zero-row match is treated as a *successful*
-  // update of nothing, not a permissions error, so this is the only way to
-  // tell "it worked" from "RLS silently blocked it."
   const { data, error } = await client
     .from('panties')
     .update({ status: 'Retired' })
@@ -655,14 +750,6 @@ async function retirePanty(id, btn) {
   candidates = candidates.filter(c => c.id !== id);
   renderGrid();
 }
-
- document.getElementById('grid').addEventListener('click', e => {
-  const btn = e.target.closest('.retire-btn');
-  if (!btn) return;
-  const id = btn.dataset.id;
-  retirePanty(id, btn);
-});
-
 document.getElementById('ageFilter').addEventListener('change', applyFilters);
 document.getElementById('wornFilter').addEventListener('change', applyFilters); 
   
