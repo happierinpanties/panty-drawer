@@ -1107,7 +1107,7 @@ async function loadSchedule() {
         ${isOwn ? `<button class="delete-btn" data-id="${row.id}">Remove</button>` : ''}
       </div>`;
   }).join('');
-
+}
 document.getElementById('scheduleList').addEventListener('click', async (e) => {
   const btn = e.target.closest('.delete-btn');
   if (!btn) return;
