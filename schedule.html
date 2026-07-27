@@ -416,6 +416,26 @@
       white-space: nowrap;
     }
 
+   .schedule-thumb-mystery {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--blush);
+    }
+
+    .schedule-thumb-mystery svg {
+      width: 60%;
+      height: 60%;
+    }
+
+    .schedule-hidden-note {
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--rose);
+      margin-top: 4px;
+    }  
+
     .delete-btn {
       flex-shrink: 0;
       background: none;
@@ -752,7 +772,11 @@
           <label class="form-label" for="dateInput">Date</label>
           <input type="date" id="dateInput" required />
         </div>
-        <div class="form-group">
+		<div class="form-group">
+          <label class="form-label" for="hideUntilInput">Hide Until <span style="text-transform:none; font-weight:400;">(optional)</span></label>
+          <input type="date" id="hideUntilInput" />
+        </div>
+		<div class="form-group full">
           <label class="form-label" for="notesInput">Notes <span style="text-transform:none; font-weight:400;">(optional)</span></label>
           <textarea id="notesInput" placeholder="Any notes for this scheduled wear..."></textarea>
         </div>
@@ -1019,7 +1043,7 @@ async function loadSchedule() {
 
   const { data, error } = await client
     .from('wear_schedule')
-    .select(`id, schedule_date, notes, user_id, panties ( id, name, image_url, status )`)
+   .select(`id, schedule_date, notes, user_id, hide_until_date, panties ( id, name, image_url, status )`)
     .gte('schedule_date', todayStr)
     .order('schedule_date', { ascending: true });
 
@@ -1043,20 +1067,46 @@ async function loadSchedule() {
       weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
     });
     const isOwn = currentSession && row.user_id === currentSession.user.id;
+    const isHidden = !!row.hide_until_date && row.hide_until_date > todayStr;
+    const showMystery = isHidden && !isOwn;
+
+    const mysteryIconSvg = `
+      <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8 6 C8 6 8 16 8 20 C8 30 16 38 24 42 C32 38 40 30 40 20 C40 16 40 6 40 6 C34 9 28 10.5 24 10.5 C20 10.5 14 9 8 6 Z"
+              fill="var(--rose)" />
+        <text x="24" y="27" text-anchor="middle" font-family="'Playfair Display', serif"
+              font-style="italic" font-weight="400" font-size="17" fill="var(--ivory)">?</text>
+      </svg>`;
+
+    const thumbHtml = showMystery
+      ? `<div class="schedule-thumb schedule-thumb-mystery">${mysteryIconSvg}</div>`
+      : `<div class="schedule-thumb"><img src="${panty.image_url || ''}" alt="${panty.name || ''}" loading="lazy" /></div>`;
+
+    const nameHtml = showMystery ? 'A surprise, for now' : (panty.name || 'Unknown');
+    const notesHtml = showMystery
+      ? ''
+      : (row.notes ? `<div class="schedule-notes">${row.notes}</div>` : '');
+
+    let hiddenNoteHtml = '';
+    if (isHidden && isOwn) {
+      const revealStr = new Date(row.hide_until_date + 'T00:00:00').toLocaleDateString(undefined, {
+        month: 'short', day: 'numeric', year: 'numeric'
+      });
+      hiddenNoteHtml = `<div class="schedule-hidden-note">Hidden from others until ${revealStr}</div>`;
+    }
+
     return `
       <div class="schedule-row">
-        <div class="schedule-thumb">
-          <img src="${panty.image_url || ''}" alt="${panty.name || ''}" loading="lazy" />
-        </div>
+        ${thumbHtml}
         <div class="schedule-main">
           <div class="schedule-date">${dateStr}</div>
-          <div class="schedule-name">${panty.name || 'Unknown'}</div>
-          ${row.notes ? `<div class="schedule-notes">${row.notes}</div>` : ''}
+          <div class="schedule-name">${nameHtml}</div>
+          ${notesHtml}
+          ${hiddenNoteHtml}
         </div>
         ${isOwn ? `<button class="delete-btn" data-id="${row.id}">Remove</button>` : ''}
       </div>`;
   }).join('');
-}
 
 document.getElementById('scheduleList').addEventListener('click', async (e) => {
   const btn = e.target.closest('.delete-btn');
@@ -1081,6 +1131,7 @@ document.getElementById('scheduleForm').addEventListener('submit', async (e) => 
   const pantyId = selectedPantyId;
   const date = document.getElementById('dateInput').value;
   const notes = document.getElementById('notesInput').value.trim();
+  const hideUntil = document.getElementById('hideUntilInput').value;
 
   if (!pantyId) {
     statusEl.textContent = 'Please select a panty first.';
@@ -1092,10 +1143,11 @@ document.getElementById('scheduleForm').addEventListener('submit', async (e) => 
   statusEl.textContent = 'Saving...';
   statusEl.className = 'form-status';
 
-  const { error } = await client.from('wear_schedule').insert({
+ const { error } = await client.from('wear_schedule').insert({
     panty_id: pantyId,
     schedule_date: date,
     notes: notes || null,
+    hide_until_date: hideUntil || null,
     user_id: currentSession.user.id
   });
 
@@ -1111,6 +1163,7 @@ document.getElementById('scheduleForm').addEventListener('submit', async (e) => 
   statusEl.textContent = 'Added!';
   statusEl.className = 'form-status success';
   document.getElementById('notesInput').value = '';
+  document.getElementById('hideUntilInput').value = '';
   selectedPantyId = null;
   document.getElementById('pickerSelectedLabel').innerHTML = 'No panty selected';
   renderPickerGrid();
