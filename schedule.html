@@ -1070,12 +1070,12 @@ async function loadSchedule() {
     const isHidden = !!row.hide_until_date && row.hide_until_date > todayStr;
     const showMystery = isHidden && !isOwn;
 
-    const mysteryIconSvg = `
+	  const mysteryIconSvg = `
       <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-        <path d="M8 6 C8 6 8 16 8 20 C8 30 16 38 24 42 C32 38 40 30 40 20 C40 16 40 6 40 6 C34 9 28 10.5 24 10.5 C20 10.5 14 9 8 6 Z"
+        <path d="M10,8 Q24,3 38,8 C43,11 43,18 38,21 C33,24 30,20 27,26 C25,30 24,32 24,34 C24,32 23,30 21,26 C18,20 15,24 10,21 C5,18 5,11 10,8 Z"
               fill="var(--rose)" />
-        <text x="24" y="27" text-anchor="middle" font-family="'Playfair Display', serif"
-              font-style="italic" font-weight="400" font-size="17" fill="var(--ivory)">?</text>
+        <text x="24" y="16" text-anchor="middle" font-family="'Playfair Display', serif"
+              font-style="italic" font-weight="400" font-size="14" fill="var(--ivory)">?</text>
       </svg>`;
 
     const thumbHtml = showMystery
