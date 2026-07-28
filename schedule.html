@@ -1141,7 +1141,23 @@ function formatEasternDateTime(utcISOString) {
     hour: 'numeric', minute: '2-digit'
   }) + ' ET';
 }
-	
+
+document.getElementById('hideUntilMorningCheckbox').addEventListener('change', (e) => {
+  if (e.target.checked) {
+    document.getElementById('hideUntilCustomFields').style.display = 'none';
+    document.getElementById('hideUntilCustomInput').value = '';
+  }
+});
+
+document.getElementById('hideUntilCustomToggle').addEventListener('click', () => {
+  const fields = document.getElementById('hideUntilCustomFields');
+  const showing = fields.style.display !== 'none';
+  fields.style.display = showing ? 'none' : 'flex';
+  if (!showing) {
+    document.getElementById('hideUntilMorningCheckbox').checked = false;
+  }
+});
+
 // ── Schedule list ─────────────────────────────────────────────
 async function loadSchedule() {
   const list = document.getElementById('scheduleList');
