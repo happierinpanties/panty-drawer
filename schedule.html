@@ -313,6 +313,58 @@
       color: var(--stone);
     }
 
+	.hide-until-block {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 14px 16px;
+      background: var(--ivory);
+      border: 1px solid var(--border);
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      accent-color: var(--rose);
+      cursor: pointer;
+    }
+
+    .btn-link {
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      color: var(--rose);
+      cursor: pointer;
+      text-align: left;
+      width: fit-content;
+    }
+
+    .btn-link:hover { color: var(--plum); text-decoration: underline; }
+
+    .hide-until-custom {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hide-until-tz-note {
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--stone);
+    }  
+
     select, input[type="date"], textarea {
       appearance: none;
       -webkit-appearance: none;
@@ -772,9 +824,19 @@
           <label class="form-label" for="dateInput">Date</label>
           <input type="date" id="dateInput" required />
         </div>
-		<div class="form-group">
-          <label class="form-label" for="hideUntilInput">Hide Until <span style="text-transform:none; font-weight:400;">(optional)</span></label>
-          <input type="date" id="hideUntilInput" />
+<div class="form-group full">
+          <label class="form-label">Hide Until <span style="text-transform:none; font-weight:400;">(optional)</span></label>
+          <div class="hide-until-block">
+            <label class="checkbox-label">
+              <input type="checkbox" id="hideUntilMorningCheckbox" />
+              Hide until that morning (reveals 5:00 AM ET on the wear date)
+            </label>
+            <button type="button" class="btn-link" id="hideUntilCustomToggle">Set a specific date &amp; time instead</button>
+            <div class="hide-until-custom" id="hideUntilCustomFields" style="display:none;">
+              <input type="datetime-local" id="hideUntilCustomInput" />
+              <span class="hide-until-tz-note">Eastern Time</span>
+            </div>
+          </div>
         </div>
 		<div class="form-group full">
           <label class="form-label" for="notesInput">Notes <span style="text-transform:none; font-weight:400;">(optional)</span></label>
@@ -1036,6 +1098,67 @@ document.addEventListener('click', (e) => {
   renderPickerGrid();
 });
 
+document.addEventListener('click', (e) => {
+  const card = e.target.closest('.picker-card');
+  if (!card) return;
+  selectedPantyId = card.dataset.id;
+  const name = card.dataset.name;
+
+  // Update selected label
+  document.getElementById('pickerSelectedLabel').innerHTML =
+    `Selected: <strong>${name}</strong>`;
+
+  // Re-render grid to show selected highlight without refetching
+  renderPickerGrid();
+});
+
+// Converts a wall-clock date+time meant as America/New_York local time
+// into the equivalent UTC ISO string, accounting for DST.
+function easternWallTimeToUtcISOString(dateStr, timeStr) {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const [hour, minute] = timeStr.split(':').map(Number);
+
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    hour12: false,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+
+  function offsetMinutesAt(instant) {
+    const parts = dtf.formatToParts(instant);
+    const map = {};
+    parts.forEach(p => { if (p.type !== 'literal') map[p.type] = p.value; });
+    const hourVal = Number(map.hour) === 24 ? 0 : Number(map.hour);
+    const asIfUTC = Date.UTC(
+      Number(map.year), Number(map.month) - 1, Number(map.day),
+      hourVal, Number(map.minute), Number(map.second)
+    );
+    return (asIfUTC - instant.getTime()) / 60000;
+  }
+
+  let wallAsUTC = Date.UTC(year, month - 1, day, hour, minute, 0);
+  let offset = offsetMinutesAt(new Date(wallAsUTC));
+  let utcMillis = wallAsUTC - offset * 60000;
+  // Refine once more in case the offset shifts near a DST boundary
+  offset = offsetMinutesAt(new Date(utcMillis));
+  utcMillis = wallAsUTC - offset * 60000;
+
+  return new Date(utcMillis).toISOString();
+}
+
+// Formats a stored UTC timestamp back into a readable Eastern time string
+function formatEasternDateTime(utcISOString) {
+  return new Date(utcISOString).toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+    month: 'short', day: 'numeric', year: 'numeric',
+    hour: 'numeric', minute: '2-digit'
+  }) + ' ET';
+}
+
+// ── Schedule list ─────────────────────────────────────────────
+async function loadSchedule() {	
+	
 // ── Schedule list ─────────────────────────────────────────────
 async function loadSchedule() {
   const list = document.getElementById('scheduleList');
@@ -1043,7 +1166,7 @@ async function loadSchedule() {
 
   const { data, error } = await client
     .from('wear_schedule')
-   .select(`id, schedule_date, notes, user_id, hide_until_date, panties ( id, name, image_url, status )`)
+ .select(`id, schedule_date, notes, user_id, hide_until, panties ( id, name, image_url, status )`)
     .gte('schedule_date', todayStr)
     .order('schedule_date', { ascending: true });
 
@@ -1067,7 +1190,7 @@ async function loadSchedule() {
       weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
     });
     const isOwn = currentSession && row.user_id === currentSession.user.id;
-    const isHidden = !!row.hide_until_date && row.hide_until_date > todayStr;
+    const isHidden = !!row.hide_until && new Date(row.hide_until).getTime() > Date.now();
     const showMystery = isHidden && !isOwn;
 
 const mysteryIconSvg = `
@@ -1086,12 +1209,9 @@ const mysteryIconSvg = `
       ? ''
       : (row.notes ? `<div class="schedule-notes">${row.notes}</div>` : '');
 
-    let hiddenNoteHtml = '';
+let hiddenNoteHtml = '';
     if (isHidden && isOwn) {
-      const revealStr = new Date(row.hide_until_date + 'T00:00:00').toLocaleDateString(undefined, {
-        month: 'short', day: 'numeric', year: 'numeric'
-      });
-      hiddenNoteHtml = `<div class="schedule-hidden-note">Hidden from others until ${revealStr}</div>`;
+      hiddenNoteHtml = `<div class="schedule-hidden-note">Hidden from others until ${formatEasternDateTime(row.hide_until)}</div>`;
     }
 
     return `
@@ -1128,9 +1248,19 @@ document.getElementById('scheduleForm').addEventListener('submit', async (e) => 
   const statusEl = document.getElementById('scheduleStatus');
   const submitBtn = document.getElementById('scheduleSubmitBtn');
   const pantyId = selectedPantyId;
-  const date = document.getElementById('dateInput').value;
+ const date = document.getElementById('dateInput').value;
   const notes = document.getElementById('notesInput').value.trim();
-  const hideUntil = document.getElementById('hideUntilInput').value;
+
+  let hideUntil = null;
+  const morningChecked = document.getElementById('hideUntilMorningCheckbox').checked;
+  const customValue = document.getElementById('hideUntilCustomInput').value; // 'YYYY-MM-DDTHH:MM'
+
+  if (morningChecked) {
+    hideUntil = easternWallTimeToUtcISOString(date, '05:00');
+  } else if (customValue) {
+    const [customDate, customTime] = customValue.split('T');
+    hideUntil = easternWallTimeToUtcISOString(customDate, customTime);
+  }
 
   if (!pantyId) {
     statusEl.textContent = 'Please select a panty first.';
@@ -1142,11 +1272,11 @@ document.getElementById('scheduleForm').addEventListener('submit', async (e) => 
   statusEl.textContent = 'Saving...';
   statusEl.className = 'form-status';
 
- const { error } = await client.from('wear_schedule').insert({
+const { error } = await client.from('wear_schedule').insert({
     panty_id: pantyId,
     schedule_date: date,
     notes: notes || null,
-    hide_until_date: hideUntil || null,
+    hide_until: hideUntil,
     user_id: currentSession.user.id
   });
 
@@ -1161,8 +1291,10 @@ document.getElementById('scheduleForm').addEventListener('submit', async (e) => 
 
   statusEl.textContent = 'Added!';
   statusEl.className = 'form-status success';
-  document.getElementById('notesInput').value = '';
-  document.getElementById('hideUntilInput').value = '';
+document.getElementById('notesInput').value = '';
+  document.getElementById('hideUntilMorningCheckbox').checked = false;
+  document.getElementById('hideUntilCustomInput').value = '';
+  document.getElementById('hideUntilCustomFields').style.display = 'none';
   selectedPantyId = null;
   document.getElementById('pickerSelectedLabel').innerHTML = 'No panty selected';
   renderPickerGrid();
