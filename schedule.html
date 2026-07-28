@@ -1098,12 +1098,6 @@ document.addEventListener('click', (e) => {
   renderPickerGrid();
 });
 
-document.addEventListener('click', (e) => {
-  const card = e.target.closest('.picker-card');
-  if (!card) return;
-  selectedPantyId = card.dataset.id;
-  const name = card.dataset.name;
-
   // Update selected label
   document.getElementById('pickerSelectedLabel').innerHTML =
     `Selected: <strong>${name}</strong>`;
@@ -1155,9 +1149,6 @@ function formatEasternDateTime(utcISOString) {
     hour: 'numeric', minute: '2-digit'
   }) + ' ET';
 }
-
-// ── Schedule list ─────────────────────────────────────────────
-async function loadSchedule() {	
 	
 // ── Schedule list ─────────────────────────────────────────────
 async function loadSchedule() {
