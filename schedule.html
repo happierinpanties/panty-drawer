@@ -1098,14 +1098,6 @@ document.addEventListener('click', (e) => {
   renderPickerGrid();
 });
 
-  // Update selected label
-  document.getElementById('pickerSelectedLabel').innerHTML =
-    `Selected: <strong>${name}</strong>`;
-
-  // Re-render grid to show selected highlight without refetching
-  renderPickerGrid();
-});
-
 // Converts a wall-clock date+time meant as America/New_York local time
 // into the equivalent UTC ISO string, accounting for DST.
 function easternWallTimeToUtcISOString(dateStr, timeStr) {
