@@ -803,11 +803,18 @@ async function loadPanties() {
   if (fabric) query = query.eq('fabric_id', fabric);
   if (color)  query = query.eq('color', color);
 
-  const [pantiesResult, wearResult, scheduleResult] = await Promise.all([
-    query,
-    client.from('panty_wear_counts').select('id, wears'),
-    client.from('wear_schedule').select('panty_id, schedule_date').gte('schedule_date', new Date().toISOString().split('T')[0]).order('schedule_date', { ascending: true }),
-  ]);
+const [pantiesResult, wearResult, scheduleResult, runningPoolResult] = await Promise.all([
+  query,
+  client.from('panty_wear_counts').select('id, wears'),
+  client.from('wear_schedule')
+    .select('panty_id, schedule_date')
+    .gte('schedule_date', new Date().toISOString().split('T')[0])
+    .order('schedule_date', { ascending: true }),
+
+  client.from('running_panty_pool')
+    .select('panty_id')
+    .is('run_date', null),
+]);
 
   // Build a map of panty_id -> next scheduled date
   const scheduleMap = {};
@@ -817,6 +824,10 @@ async function loadPanties() {
     }
   });
 
+	const runningPoolSet = new Set(
+  (runningPoolResult.data || []).map(row => row.panty_id)
+);
+	
   if (pantiesResult.error) {
     console.error('Error fetching panties:', JSON.stringify(pantiesResult.error));
     grid.innerHTML = '<div class="empty"><p>Could not load items. Check the console for details.</p></div>';
@@ -851,8 +862,10 @@ async function loadPanties() {
   grid.innerHTML = data.map(p => {
     const wears = wearMap[p.id] || 0;
     const brand = p.brands?.name || '';
-    const nextDate = scheduleMap[p.id];
-const pillHtml = nextDate ? `<div class="scheduled-pill" title="Scheduled — check the Wear Schedule">
+const nextDate = scheduleMap[p.id];
+const isReserved = !!nextDate || runningPoolSet.has(p.id);
+
+const pillHtml = isReserved ? `<div class="scheduled-pill" title="Reserved for an upcoming selection">
         <svg width="11" height="11" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect x="1" y="2" width="10" height="9" rx="1.5" stroke="#6b3a45" stroke-width="1.2"/>
           <path d="M4 1v2M8 1v2" stroke="#6b3a45" stroke-width="1.2" stroke-linecap="round"/>
