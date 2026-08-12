@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+sc<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -488,6 +488,14 @@
       margin-top: 4px;
     }  
 
+    .schedule-countdown {
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--stone);
+      margin-top: 4px;
+    }
+
     .delete-btn {
       flex-shrink: 0;
       background: none;
@@ -876,6 +884,66 @@ const client = createClient(
 let currentSession = null;
 let currentlyAllowed = false;
 
+// ── Mystery flavor text ─────────────────────────────────────────
+const MYSTERY_MESSAGES = [
+  'A surprise, for now',
+  'Patience, darling',
+  'Still under wraps',
+  'The big reveal is coming',
+  'Some secrets keep well',
+  'Wait for it...',
+  'A little mystery never hurt',
+  'All will be revealed soon'
+];
+
+// Deterministic pick so the same entry always shows the same line,
+// instead of the text changing every time the list re-renders.
+function getMysteryText(id) {
+  let hash = 0;
+  const str = String(id);
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+  }
+  return MYSTERY_MESSAGES[hash % MYSTERY_MESSAGES.length];
+}
+
+// ── Countdown ────────────────────────────────────────────────────
+function formatCountdownText(diffMs) {
+  if (diffMs <= 0) return 'Unlocking any moment...';
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) return `Unlocks in ${hours}h ${minutes}m`;
+  if (minutes > 0) return `Unlocks in ${minutes}m ${seconds}s`;
+  return `Unlocks in ${seconds}s`;
+}
+
+let countdownReloadPending = false;
+
+function tickCountdowns() {
+  document.querySelectorAll('.countdown-timer').forEach(el => {
+    const hideUntil = el.dataset.hideUntil;
+    if (!hideUntil) return;
+    const diffMs = new Date(hideUntil).getTime() - Date.now();
+    if (diffMs <= 0) {
+      el.textContent = 'Unlocking any moment...';
+      if (!countdownReloadPending) {
+        countdownReloadPending = true;
+        // Small delay so the "unlocking" message is visible briefly
+        // before the list refreshes and reveals the real entry.
+        setTimeout(() => {
+          countdownReloadPending = false;
+          loadSchedule();
+        }, 1500);
+      }
+      return;
+    }
+    el.textContent = formatCountdownText(diffMs);
+  });
+}
+
 // ── Auth UI rendering ─────────────────────────────────────────
 function renderAuthArea() {
   const area = document.getElementById('authArea');
@@ -1202,15 +1270,22 @@ const mysteryIconSvg = `
     const thumbHtml = showMystery
       ? `<div class="schedule-thumb schedule-thumb-mystery">${mysteryIconSvg}</div>`
       : `<div class="schedule-thumb"><img src="${panty.image_url || ''}" alt="${panty.name || ''}" loading="lazy" /></div>`;
-
-    const nameHtml = showMystery ? 'A surprise, for now' : (panty.name || 'Unknown');
+const nameHtml = showMystery ? getMysteryText(row.id) : (panty.name || 'Unknown');
     const notesHtml = showMystery
       ? ''
       : (row.notes ? `<div class="schedule-notes">${row.notes}</div>` : '');
 
-let hiddenNoteHtml = '';
+    let hiddenNoteHtml = '';
     if (isHidden && isOwn) {
       hiddenNoteHtml = `<div class="schedule-hidden-note">Hidden from others until ${formatEasternDateTime(row.hide_until)}</div>`;
+    }
+
+    // Only show the countdown once the wear date has arrived (or passed),
+    // not while the entry is still scheduled for some future day.
+    let countdownHtml = '';
+    if (showMystery && row.schedule_date <= todayStr) {
+      const initialDiff = new Date(row.hide_until).getTime() - Date.now();
+      countdownHtml = `<div class="schedule-countdown countdown-timer" data-hide-until="${row.hide_until}">${formatCountdownText(initialDiff)}</div>`;
     }
 
     return `
@@ -1221,6 +1296,7 @@ let hiddenNoteHtml = '';
           <div class="schedule-name">${nameHtml}</div>
           ${notesHtml}
           ${hiddenNoteHtml}
+          ${countdownHtml}
         </div>
         ${isOwn ? `<button class="delete-btn" data-id="${row.id}">Remove</button>` : ''}
       </div>`;
@@ -1415,6 +1491,7 @@ async function init() {
   loadPantyPicker();
   loadSchedule();
   loadScheduleKPIs();
+  setInterval(tickCountdowns, 1000);
 
   // Default date input to today
   document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
