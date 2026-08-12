@@ -488,13 +488,61 @@ sc<!DOCTYPE html>
       margin-top: 4px;
     }  
 
-    .schedule-countdown {
+.schedule-countdown {
       font-size: 10px;
       letter-spacing: 0.04em;
       text-transform: uppercase;
       color: var(--stone);
       margin-top: 4px;
     }
+
+    .schedule-row.up-next {
+      border-top: 3px solid var(--rose);
+    }
+
+    .up-next-label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--rose);
+      margin-bottom: 2px;
+    }
+
+    .confirm-btn {
+      flex-shrink: 0;
+      background: var(--plum);
+      border: none;
+      border-radius: 2px;
+      padding: 7px 12px;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .confirm-btn:hover { background: var(--rose); }
+
+    .btn-secondary {
+      background: var(--stone);
+      color: #fff;
+      border: none;
+      border-radius: 2px;
+      padding: 12px 20px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-secondary:hover { background: var(--plum); }
+    .btn-secondary:disabled { background: var(--border); cursor: default; }
 
     .delete-btn {
       flex-shrink: 0;
@@ -850,9 +898,11 @@ sc<!DOCTYPE html>
           <label class="form-label" for="notesInput">Notes <span style="text-transform:none; font-weight:400;">(optional)</span></label>
           <textarea id="notesInput" placeholder="Any notes for this scheduled wear..."></textarea>
         </div>
-        <div class="form-submit-row" style="grid-column:1/-1;">
+<div class="form-submit-row" style="grid-column:1/-1;">
           <button type="submit" class="btn-primary" id="scheduleSubmitBtn">Add to Schedule</button>
+          <button type="button" class="btn-secondary" id="addToRunningPoolBtn">Add to Running Pool</button>
           <span class="form-status" id="scheduleStatus"></span>
+          <span class="form-status" id="runningPoolStatus"></span>
         </div>
       </form>
       <div class="locked-note" id="notAllowedNote" style="display:none;">
@@ -860,13 +910,17 @@ sc<!DOCTYPE html>
       </div>
     </div>
 
-    <div class="section">
+<div class="section">
       <div class="section-title">Upcoming</div>
       <div class="schedule-list" id="scheduleList"></div>
     </div>
 
-  </div>
+    <div class="section">
+      <div class="section-title">Running Pool</div>
+      <div class="schedule-list" id="runningPoolList"></div>
+    </div>
 
+  </div>
 </div>
 
 <footer>
@@ -1315,6 +1369,142 @@ document.getElementById('scheduleList').addEventListener('click', async (e) => {
   loadSchedule();
 });
 
+// ── Running pool ─────────────────────────────────────────────
+async function loadRunningPool() {
+  const list = document.getElementById('runningPoolList');
+
+  const { data, error } = await client
+    .from('running_panty_pool')
+    .select(`id, added_at, user_id, panties ( id, name, image_url, status )`)
+    .is('run_date', null)
+    .order('added_at', { ascending: true });
+
+  if (error) {
+    list.innerHTML = '<div class="empty"><p>Could not load the running pool.</p></div>';
+    console.error('Running pool load error:', JSON.stringify(error));
+    return;
+  }
+
+  // Exclude entries whose panty is currently in the Dirty hamper, same as the main schedule
+  const filtered = (data || []).filter(row => row.panties?.status !== 'Dirty');
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty"><p>The pool is empty. Add a few for your next run.</p></div>';
+    return;
+  }
+
+  const mysteryIconSvg = `
+    <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+      <rect x="6" y="6" width="36" height="36" rx="10" fill="var(--rose)" />
+      <text x="24" y="32" text-anchor="middle" font-family="'Playfair Display', serif"
+            font-style="italic" font-weight="400" font-size="24" fill="var(--ivory)">?</text>
+    </svg>`;
+
+  list.innerHTML = filtered.map((row, index) => {
+    const panty = row.panties || {};
+    const isOwn = currentSession && row.user_id === currentSession.user.id;
+    const isTop = index === 0;
+    // Only the top-of-queue entry is a spoiler-free reveal to everyone;
+    // everything behind it stays a mystery unless you're the one who added it.
+    const showMystery = !isTop && !isOwn;
+
+    const thumbHtml = showMystery
+      ? `<div class="schedule-thumb schedule-thumb-mystery">${mysteryIconSvg}</div>`
+      : `<div class="schedule-thumb"><img src="${panty.image_url || ''}" alt="${panty.name || ''}" loading="lazy" /></div>`;
+
+    const nameHtml = showMystery ? getMysteryText(row.id) : (panty.name || 'Unknown');
+    const upNextLabelHtml = isTop ? `<div class="up-next-label">Up Next</div>` : '';
+
+    const confirmBtnHtml = isTop && currentSession
+      ? `<button class="confirm-btn" data-id="${row.id}">Confirm Run</button>`
+      : '';
+    const deleteBtnHtml = isOwn
+      ? `<button class="delete-btn" data-id="${row.id}">Remove</button>`
+      : '';
+
+    return `
+      <div class="schedule-row${isTop ? ' up-next' : ''}">
+        ${thumbHtml}
+        <div class="schedule-main">
+          ${upNextLabelHtml}
+          <div class="schedule-name">${nameHtml}</div>
+        </div>
+        ${confirmBtnHtml}
+        ${deleteBtnHtml}
+      </div>`;
+  }).join('');
+}
+
+document.getElementById('runningPoolList').addEventListener('click', async (e) => {
+  const confirmBtn = e.target.closest('.confirm-btn');
+  if (confirmBtn) {
+    const id = confirmBtn.dataset.id;
+    if (!confirm('Mark this as worn for your run? It will drop off the pool.')) return;
+    const { error } = await client
+      .from('running_panty_pool')
+      .update({ run_date: new Date().toISOString() })
+      .eq('id', id);
+    if (error) {
+      console.error('Confirm run error:', JSON.stringify(error));
+      alert('Could not confirm this run.');
+      return;
+    }
+    loadRunningPool();
+    return;
+  }
+
+  const deleteBtn = e.target.closest('.delete-btn');
+  if (deleteBtn) {
+    const id = deleteBtn.dataset.id;
+    const { error } = await client.from('running_panty_pool').delete().eq('id', id);
+    if (error) {
+      console.error('Running pool delete error:', JSON.stringify(error));
+      alert('Could not remove this entry.');
+      return;
+    }
+    loadRunningPool();
+  }
+});
+
+document.getElementById('addToRunningPoolBtn').addEventListener('click', async () => {
+  if (!currentSession) return;
+
+  const statusEl = document.getElementById('runningPoolStatus');
+  const btn = document.getElementById('addToRunningPoolBtn');
+  const pantyId = selectedPantyId;
+
+  if (!pantyId) {
+    statusEl.textContent = 'Please select a panty first.';
+    statusEl.className = 'form-status error';
+    return;
+  }
+
+  btn.disabled = true;
+  statusEl.textContent = 'Adding...';
+  statusEl.className = 'form-status';
+
+  const { error } = await client.from('running_panty_pool').insert({
+    panty_id: pantyId,
+    user_id: currentSession.user.id
+  });
+
+  btn.disabled = false;
+
+  if (error) {
+    statusEl.textContent = 'Could not add — this account may not be approved yet.';
+    statusEl.className = 'form-status error';
+    console.error('Running pool insert error:', JSON.stringify(error));
+    return;
+  }
+
+  statusEl.textContent = 'Added to pool!';
+  statusEl.className = 'form-status success';
+  selectedPantyId = null;
+  document.getElementById('pickerSelectedLabel').innerHTML = 'No panty selected';
+  renderPickerGrid();
+  loadRunningPool();
+  setTimeout(() => { statusEl.textContent = ''; }, 2000);
+});
 // ── Add to schedule ───────────────────────────────────────────
 document.getElementById('scheduleForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -1488,19 +1678,21 @@ async function init() {
   renderAuthArea();
   renderPageState();
 
-  loadPantyPicker();
+loadPantyPicker();
   loadSchedule();
   loadScheduleKPIs();
+  loadRunningPool();
   setInterval(tickCountdowns, 1000);
 
   // Default date input to today
   document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
 
-  client.auth.onAuthStateChange((_event, session) => {
+client.auth.onAuthStateChange((_event, session) => {
     currentSession = session;
     renderAuthArea();
     renderPageState();
     loadSchedule();
+    loadRunningPool();
   });
 }
 
