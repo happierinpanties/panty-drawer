@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pantyboy Yoga</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+<script type="module" src="/js/nav-auth.js"></script>
+<script type="module" src="/js/auth-gate.js"></script>
+  <link rel="manifest" href="/manifest.json" />
+<link rel="apple-touch-icon" href="/icons/icon-180.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="The Drawer" />
+<meta name="theme-color" content="#c9847a" />
+
+  <style>
+    :root {
+      --blush:   #f5e8e4;
+      --rose:    #c9847a;
+      --plum:    #6b3a45;
+      --ivory:   #fdf8f6;
+      --stone:   #8a7570;
+      --ink:     #2e1f22;
+      --border:  #e8d8d3;
+      --card-bg: #ffffff;
+      --nav-h:   64px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--ivory);
+      color: var(--ink);
+      font-weight: 300;
+    }
+
+    /* ── Nav ─────────────────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(253,248,246,0.96);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      height: var(--nav-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+    }
+
+    .nav-wordmark {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      color: var(--plum);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      list-style: none;
+      position: relative;
+    }
+
+    .nav-links > li { position: relative; }
+
+    .nav-links > li > a,
+    .nav-links > li > button {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 16px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--stone);
+      text-decoration: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .nav-links > li > a:hover,
+    .nav-links > li > button:hover { color: var(--plum); }
+
+    .nav-links > li > a.active {
+      color: var(--plum);
+      border-bottom: 2px solid var(--rose);
+    }
+
+    .dropdown {
+      position: absolute;
+      top: calc(100% + 1px);
+      right: 0;
+      min-width: 180px;
+      background: var(--ivory);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--rose);
+      box-shadow: 0 8px 24px rgba(107,58,69,0.08);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-4px);
+      transition: opacity 0.18s, transform 0.18s;
+      list-style: none;
+    }
+
+    .nav-links > li:hover .dropdown,
+    .nav-links > li:focus-within .dropdown {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .dropdown li a {
+      display: block;
+      padding: 10px 16px;
+      font-size: 12px;
+      color: var(--stone);
+      text-decoration: none;
+    }
+
+    .dropdown li a:hover { color: var(--plum); background: var(--blush); }
+    .dropdown li a.active { color: var(--plum); }
+
+    .auth-area { display: flex; align-items: center; gap: 12px; }
+
+    .auth-email {
+      font-size: 11px;
+      color: var(--stone);
+      max-width: 160px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .btn-text {
+      background: none;
+      border: none;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--stone);
+      cursor: pointer;
+      text-decoration: none;
+      padding: 8px 4px;
+    }
+
+    .btn-text:hover { color: var(--plum); }
+
+    /* ── Page header ─────────────────────────────────────────── */
+    .page-header {
+      text-align: center;
+      padding: 56px 24px 40px;
+      border-bottom: 1px solid var(--border);
+    }
+    .page-header .eyebrow {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--rose);
+      margin-bottom: 14px;
+    }
+    .page-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(34px, 5vw, 52px);
+      font-weight: 400;
+      color: var(--plum);
+      line-height: 1.15;
+    }
+    .page-header h1 em { font-style: italic; }
+
+    /* ── Layout ──────────────────────────────────────────────── */
+    .content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 32px 80px;
+    }
+
+    .section { margin-top: 48px; }
+    .section:first-child { margin-top: 0; }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--plum);
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    /* ── KPIs ────────────────────────────────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 20px;
+    }
+
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--rose);
+      padding: 24px 20px;
+      text-align: center;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(107,58,69,0.09);
+    }
+
+    .kpi-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 36px;
+      font-weight: 400;
+      color: var(--plum);
+      line-height: 1;
+    }
+
+    .kpi-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--stone);
+      margin-top: 8px;
+    }
+
+    /* ── Today's workout card ───────────────────────────────── */
+    .workout-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--rose);
+      padding: 32px;
+    }
+
+    .workout-meta {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--rose);
+      margin-bottom: 6px;
+    }
+
+    .workout-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px;
+      color: var(--plum);
+      margin-bottom: 4px;
+    }
+
+    .workout-focus {
+      font-size: 12px;
+      color: var(--stone);
+      margin-bottom: 24px;
+    }
+
+    .exercise-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .exercise-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--ivory);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .exercise-row:hover { border-color: var(--rose); }
+
+    .exercise-row.done {
+      background: var(--blush);
+      border-color: var(--rose);
+    }
+
+    .exercise-check {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      border: 1.5px solid var(--stone);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: transparent;
+      transition: all 0.15s;
+    }
+
+    .exercise-row.done .exercise-check {
+      background: var(--rose);
+      border-color: var(--rose);
+      color: #fff;
+    }
+
+    .exercise-text { font-size: 13px; color: var(--ink); flex: 1; }
+    .exercise-row.done .exercise-text { color: var(--stone); text-decoration: line-through; }
+    .exercise-amount { font-size: 12px; color: var(--stone); white-space: nowrap; }
+
+    .btn-primary {
+      background: var(--plum);
+      color: #fff;
+      border: none;
+      border-radius: 2px;
+      padding: 13px 22px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s;
+      width: 100%;
+    }
+
+    .btn-primary:hover { background: var(--rose); }
+    .btn-primary:disabled { background: var(--border); cursor: default; }
+
+    .completed-banner {
+      text-align: center;
+      padding: 20px;
+      color: var(--plum);
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      font-style: italic;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--stone);
+      font-style: italic;
+      font-size: 13px;
+    }
+
+    /* ── Week progress ───────────────────────────────────────── */
+    .week-progress {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 20px 24px;
+    }
+
+    .week-bows { display: flex; gap: 6px; }
+
+    .week-bow {
+      width: 28px;
+      height: 28px;
+    }
+
+    .week-progress-text {
+      font-size: 12px;
+      color: var(--stone);
+      margin-left: auto;
+    }
+
+    /* ── Bow calendar ────────────────────────────────────────── */
+    .calendar-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .calendar-nav button {
+      background: none;
+      border: none;
+      color: var(--stone);
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px 10px;
+    }
+
+    .calendar-nav button:hover { color: var(--plum); }
+
+    .calendar-month-label {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      color: var(--plum);
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+
+    .calendar-dow {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--stone);
+      text-align: center;
+      padding-bottom: 6px;
+    }
+
+    .calendar-day {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      font-size: 11px;
+      color: var(--stone);
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      position: relative;
+    }
+
+    .calendar-day.empty { background: transparent; border-color: transparent; }
+    .calendar-day.done { border-color: var(--rose); }
+    .calendar-day.perfect-week-day { border-width: 2px; }
+
+    .calendar-bow { width: 16px; height: 16px; }
+
+    /* ── Sign-in card (shown when logged out) ───────────────── */
+    .signin-note {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--rose);
+      padding: 40px;
+      text-align: center;
+      max-width: 420px;
+      margin: 60px auto;
+      font-size: 13px;
+      color: var(--stone);
+    }
+
+    .signin-note a { color: var(--plum); }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 700px) {
+      nav { padding: 0 16px; }
+      .content { padding: 24px 16px 60px; }
+      .auth-email { display: none; }
+      .workout-card { padding: 22px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-wordmark" href="https://www.panty-drawer.com">The Drawer</a>
+  <ul class="nav-links">
+    <li><a href="https://www.panty-drawer.com">Drawer</a></li>
+    <li>
+      <button aria-haspopup="true">Pages <span class="chevron">&#9662;</span></button>
+      <ul class="dropdown">
+        <li><a href="/stats">Panty Stats</a></li>
+        <li><a href="/hamper">Hamper</a></li>
+        <li><a href="/retired">Retired Panties</a></li>
+        <li><a href="/chopping-block">Chopping Block</a><li>
+        <li data-auth="required"><a href="/schedule">Wear Schedule</a></li>
+        <li data-auth="required"><a href="/cage">Cage</a></li>
+        <li data-auth="required"><a href="/rewards">Rewards</a></li>
+        <li data-auth="required"><a href="/mood">Mood</a><li>
+        <li data-auth="required"><a href="/yoga" class="active">Pantyboy Yoga</a></li>
+      </ul>
+    </li>
+    <li class="auth-area" id="authArea"><!-- populated by nav-auth.js --></li>
+  </ul>
+</nav>
+
+<header class="page-header">
+  <p class="eyebrow">Move &amp; Feel Good</p>
+  <h1>Pantyboy <em>Yoga</em></h1>
+</header>
+
+<div class="content">
+
+  <div id="signedOutNote" class="signin-note" style="display:none;">
+    Sign in to track your Pantyboy Yoga progress. <a href="/signin.html?redirect=/yoga">Sign in</a>
+  </div>
+
+  <div id="yogaApp" style="display:none;">
+
+    <!-- KPIs -->
+    <div class="section">
+      <div class="section-title">At a Glance</div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-value" id="currentStreak">--</div>
+          <div class="kpi-label">Week Streak</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="longestStreak">--</div>
+          <div class="kpi-label">Longest Streak</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="totalWorkouts">--</div>
+          <div class="kpi-label">Total Workouts</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="totalTime">--</div>
+          <div class="kpi-label">Total Time</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- This week -->
+    <div class="section">
+      <div class="section-title">This Week</div>
+      <div class="week-progress">
+        <div class="week-bows" id="weekBows"></div>
+        <div class="week-progress-text" id="weekProgressText">-- of 3 complete</div>
+      </div>
+    </div>
+
+    <!-- Today's workout -->
+    <div class="section">
+      <div class="section-title">Today's Routine</div>
+      <div id="workoutCardWrap"></div>
+    </div>
+
+    <!-- Bow calendar -->
+    <div class="section">
+      <div class="section-title">Calendar</div>
+      <div class="calendar-nav">
+        <button id="calPrevBtn" aria-label="Previous month">&#8592;</button>
+        <div class="calendar-month-label" id="calMonthLabel">--</div>
+        <button id="calNextBtn" aria-label="Next month">&#8594;</button>
+      </div>
+      <div class="calendar-grid" id="calendarGrid"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script type="module">
+  import { client } from '/js/supabase-client.js';
+
+  const PROGRAM_ID = '00000000-0000-0000-0000-000000000001';
+
+  let currentSession = null;
+  let completedRows = [];      // { workout_day_id, completed_at, duration_minutes, notes, week_number, workout_number }
+  let calendarCursor = new Date();
+  calendarCursor.setDate(1);
+
+  const bowSvg = (filled) => `
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 12c-2-3-6-5-9-3s-2 7 1 8c2 .7 6-1 8-5zm0 0c2-3 6-5 9-3s2 7-1 8c-2 .7-6-1-8-5z"
+        fill="${filled ? 'var(--rose)' : 'none'}" stroke="${filled ? 'var(--rose)' : 'var(--border)'}" stroke-width="1.3"/>
+      <circle cx="12" cy="12" r="1.6" fill="${filled ? 'var(--plum)' : 'none'}" stroke="${filled ? 'var(--plum)' : 'var(--border)'}" stroke-width="1.3"/>
+    </svg>`;
+
+  function sundayWeekStart(d) {
+    const x = new Date(d);
+    x.setHours(0, 0, 0, 0);
+    x.setDate(x.getDate() - x.getDay());
+    return x;
+  }
+
+  function dayKey(d) {
+    return d.toISOString().slice(0, 10);
+  }
+
+  async function init() {
+    const { data: { session } } = await client.auth.getSession();
+    currentSession = session;
+
+    if (!session) {
+      document.getElementById('signedOutNote').style.display = 'block';
+      return;
+    }
+
+    const { data: allowed, error: allowedErr } = await client.rpc('is_allowed_user');
+    if (allowedErr || !allowed) {
+      document.getElementById('signedOutNote').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('yogaApp').style.display = 'block';
+
+    await loadHistory();
+    renderKpis();
+    renderWeekProgress();
+    await renderNextWorkout();
+    renderCalendar();
+
+    document.getElementById('calPrevBtn').addEventListener('click', () => {
+      calendarCursor.setMonth(calendarCursor.getMonth() - 1);
+      renderCalendar();
+    });
+    document.getElementById('calNextBtn').addEventListener('click', () => {
+      calendarCursor.setMonth(calendarCursor.getMonth() + 1);
+      renderCalendar();
+    });
+  }
+
+  async function loadHistory() {
+    const { data, error } = await client
+      .from('workout_history')
+      .select('workout_day_id, completed_at, duration_minutes, notes, workout_days(week_number, workout_number)')
+      .eq('user_id', currentSession.user.id)
+      .order('completed_at', { ascending: true });
+
+    if (error) {
+      console.error('Workout history load error:', JSON.stringify(error));
+      completedRows = [];
+      return;
+    }
+
+    completedRows = (data || []).map(row => ({
+      workout_day_id: row.workout_day_id,
+      completed_at: row.completed_at,
+      duration_minutes: row.duration_minutes,
+      notes: row.notes,
+      week_number: row.workout_days?.week_number,
+      workout_number: row.workout_days?.workout_number,
+    }));
+  }
+
+  /* ---------------------------
+     KPIs: weekly streak (Sun–Sat)
+  --------------------------- */
+  function renderKpis() {
+    const totalWorkouts = completedRows.length;
+    const totalMinutes = completedRows.reduce((sum, r) => sum + (r.duration_minutes || 0), 0);
+    document.getElementById('totalWorkouts').textContent = totalWorkouts;
+    document.getElementById('totalTime').textContent =
+      totalMinutes >= 60 ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m` : `${totalMinutes}m`;
+
+    if (totalWorkouts === 0) {
+      document.getElementById('currentStreak').textContent = '0';
+      document.getElementById('longestStreak').textContent = '0';
+      return;
+    }
+
+    // Bucket distinct workout completions by Sunday-start week
+    const weekBuckets = new Map(); // weekStartKey -> Set(workout_day_id)
+    completedRows.forEach(r => {
+      const wsKey = dayKey(sundayWeekStart(new Date(r.completed_at)));
+      if (!weekBuckets.has(wsKey)) weekBuckets.set(wsKey, new Set());
+      weekBuckets.get(wsKey).add(r.workout_day_id);
+    });
+
+    const successfulWeekKeys = [...weekBuckets.entries()]
+      .filter(([, ids]) => ids.size >= 3)
+      .map(([wsKey]) => wsKey)
+      .sort();
+
+    if (successfulWeekKeys.length === 0) {
+      document.getElementById('currentStreak').textContent = '0';
+      document.getElementById('longestStreak').textContent = '0';
+      return;
+    }
+
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+    let longest = 1, longestRun = 1;
+    for (let i = 1; i < successfulWeekKeys.length; i++) {
+      const diff = Math.round((new Date(successfulWeekKeys[i]) - new Date(successfulWeekKeys[i - 1])) / weekMs);
+      longestRun = diff === 1 ? longestRun + 1 : 1;
+      if (longestRun > longest) longest = longestRun;
+    }
+
+    // Current streak only "active" if the most recent successful week
+    // is this week or last week (so a live streak isn't lost mid-week)
+    const thisWeekStart = sundayWeekStart(new Date());
+    const lastWeekStart = new Date(thisWeekStart);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+    const mostRecentKey = successfulWeekKeys[successfulWeekKeys.length - 1];
+    const isActive = mostRecentKey === dayKey(thisWeekStart) || mostRecentKey === dayKey(lastWeekStart);
+
+    let current = 0;
+    if (isActive) {
+      current = 1;
+      for (let i = successfulWeekKeys.length - 1; i > 0; i--) {
+        const diff = Math.round((new Date(successfulWeekKeys[i]) - new Date(successfulWeekKeys[i - 1])) / weekMs);
+        if (diff === 1) current++;
+        else break;
+      }
+    }
+
+    document.getElementById('currentStreak').textContent = current;
+    document.getElementById('longestStreak').textContent = longest;
+  }
+
+  /* ---------------------------
+     This week's progress bows
+  --------------------------- */
+  function renderWeekProgress() {
+    const thisWeekStart = sundayWeekStart(new Date());
+    const thisWeekEnd = new Date(thisWeekStart);
+    thisWeekEnd.setDate(thisWeekEnd.getDate() + 7);
+
+    const doneIds = new Set(
+      completedRows
+        .filter(r => {
+          const d = new Date(r.completed_at);
+          return d >= thisWeekStart && d < thisWeekEnd;
+        })
+        .map(r => r.workout_day_id)
+    );
+
+    const doneCount = Math.min(doneIds.size, 3);
+    const bowsEl = document.getElementById('weekBows');
+    bowsEl.innerHTML = '';
+    for (let i = 0; i < 3; i++) {
+      const wrap = document.createElement('div');
+      wrap.className = 'week-bow';
+      wrap.innerHTML = bowSvg(i < doneCount);
+      bowsEl.appendChild(wrap);
+    }
+    document.getElementById('weekProgressText').textContent = `${doneCount} of 3 complete`;
+  }
+
+  /* ---------------------------
+     Next workout (client-side, mirrors stats.html's streak pattern)
+  --------------------------- */
+  async function renderNextWorkout() {
+    const wrap = document.getElementById('workoutCardWrap');
+
+    const { data: days, error: daysErr } = await client
+      .from('workout_days')
+      .select('id, week_number, workout_number, workout_code, workout_name, workout_focus, estimated_minutes')
+      .eq('program_id', PROGRAM_ID)
+      .order('week_number', { ascending: true })
+      .order('workout_number', { ascending: true });
+
+    if (daysErr) {
+      console.error('Workout days load error:', JSON.stringify(daysErr));
+      wrap.innerHTML = `<div class="empty-state">Couldn't load the program right now.</div>`;
+      return;
+    }
+
+    const completedIds = new Set(completedRows.map(r => r.workout_day_id));
+    const next = (days || []).find(d => !completedIds.has(d.id));
+
+    if (!next) {
+      wrap.innerHTML = `<div class="empty-state">No more workouts seeded yet — weeks 2–12 are still being finalized. 🎀</div>`;
+      return;
+    }
+
+    const { data: exercises, error: exErr } = await client
+      .from('workout_exercises')
+      .select('id, exercise_name, sort_order, reps, reps_per_side, duration_seconds, sets, instruction')
+      .eq('workout_day_id', next.id)
+      .order('sort_order', { ascending: true });
+
+    if (exErr) {
+      console.error('Workout exercises load error:', JSON.stringify(exErr));
+      wrap.innerHTML = `<div class="empty-state">Couldn't load today's exercises.</div>`;
+      return;
+    }
+
+    const checkedIds = new Set();
+
+    function amountText(ex) {
+      if (ex.duration_seconds) return `${ex.duration_seconds} sec`;
+      if (ex.reps_per_side) return `${ex.reps_per_side}/side`;
+      if (ex.reps) return `${ex.reps} reps`;
+      return '';
+    }
+
+    wrap.innerHTML = `
+      <div class="workout-card">
+        <div class="workout-meta">Week ${next.week_number} &middot; Workout ${next.workout_code || next.workout_number}</div>
+        <div class="workout-name">${next.workout_name}</div>
+        <div class="workout-focus">${next.workout_focus || ''}${next.estimated_minutes ? ` &middot; About ${next.estimated_minutes} minutes` : ''}</div>
+        <ul class="exercise-list" id="exerciseList">
+          ${(exercises || []).map(ex => `
+            <li class="exercise-row" data-id="${ex.id}">
+              <div class="exercise-check">&#10003;</div>
+              <div class="exercise-text">${ex.exercise_name}</div>
+              <div class="exercise-amount">${amountText(ex)}</div>
+            </li>
+          `).join('')}
+        </ul>
+        <button class="btn-primary" id="completeWorkoutBtn">Complete Workout 🎀</button>
+      </div>
+    `;
+
+    document.getElementById('exerciseList').addEventListener('click', (e) => {
+      const row = e.target.closest('.exercise-row');
+      if (!row) return;
+      const id = row.dataset.id;
+      if (checkedIds.has(id)) {
+        checkedIds.delete(id);
+        row.classList.remove('done');
+      } else {
+        checkedIds.add(id);
+        row.classList.add('done');
+      }
+    });
+
+    document.getElementById('completeWorkoutBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('completeWorkoutBtn');
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+
+      const { data, error } = await client
+        .from('workout_history')
+        .insert({ user_id: currentSession.user.id, workout_day_id: next.id })
+        .select('id');
+
+      if (error || !data || data.length === 0) {
+        console.error('Complete workout error:', JSON.stringify(error));
+        btn.disabled = false;
+        btn.textContent = 'Complete Workout 🎀';
+        return;
+      }
+
+      await loadHistory();
+      renderKpis();
+      renderWeekProgress();
+      renderCalendar();
+
+      wrap.innerHTML = `<div class="workout-card"><div class="completed-banner">Nice work — logged. 🎀</div></div>`;
+    });
+  }
+
+  /* ---------------------------
+     Bow calendar
+  --------------------------- */
+  function renderCalendar() {
+    const label = calendarCursor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    document.getElementById('calMonthLabel').textContent = label;
+
+    const doneDays = new Set(completedRows.map(r => dayKey(new Date(r.completed_at))));
+
+    const year = calendarCursor.getFullYear();
+    const month = calendarCursor.getMonth();
+    const firstDow = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const grid = document.getElementById('calendarGrid');
+    grid.innerHTML = '';
+
+    ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(d => {
+      const el = document.createElement('div');
+      el.className = 'calendar-dow';
+      el.textContent = d;
+      grid.appendChild(el);
+    });
+
+    for (let i = 0; i < firstDow; i++) {
+      const el = document.createElement('div');
+      el.className = 'calendar-day empty';
+      grid.appendChild(el);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateObj = new Date(year, month, day);
+      const key = dayKey(dateObj);
+      const done = doneDays.has(key);
+
+      const el = document.createElement('div');
+      el.className = 'calendar-day' + (done ? ' done' : '');
+      el.innerHTML = done
+        ? `<div class="calendar-bow">${bowSvg(true)}</div><span>${day}</span>`
+        : `<span>${day}</span>`;
+      grid.appendChild(el);
+    }
+  }
+
+  init();
+</script>
+
+</body>
+</html>
