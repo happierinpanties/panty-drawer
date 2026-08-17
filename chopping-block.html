@@ -721,8 +721,10 @@ function closeModal() {
 
 document.getElementById('modalConfirmBtn').addEventListener('click', async () => {
   if (!pendingRetireId) return;
+  const id = pendingRetireId;
+  const btn = pendingRetireBtn;
   closeModal();
-  await retirePanty(pendingRetireId, pendingRetireBtn);
+  await retirePanty(id, btn);
 });
 
 async function retirePanty(id, btn) {
