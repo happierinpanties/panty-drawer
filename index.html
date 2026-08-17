@@ -718,6 +718,15 @@ async function refreshAuthState() {
 
 client.auth.onAuthStateChange(() => refreshAuthState());	
 	
+// ── Date helpers ──────────────────────────────────────────────
+function getLocalDateString() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 // ── Pip helpers ───────────────────────────────────────────────
 function renderPips(wears) {
   const MAX_PIPS = 10;
@@ -942,7 +951,7 @@ document.getElementById('wearModalConfirmBtn').addEventListener('click', async (
   btn.disabled = true;
   btn.textContent = 'Logging...';
 
-  const { error } = await client.rpc('wear_panty_by_id', { p_id: id, p_worn_at: new Date().toISOString().split('T')[0] });
+ const { error } = await client.rpc('wear_panty_by_id', { p_id: id, p_worn_at: getLocalDateString() });
 
   if (error) {
     console.error('Wear error:', JSON.stringify(error));
