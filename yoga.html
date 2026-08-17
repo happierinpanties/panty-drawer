@@ -320,6 +320,7 @@
 
     .exercise-text { font-size: 13px; color: var(--ink); flex: 1; }
     .exercise-row.done .exercise-text { color: var(--stone); text-decoration: line-through; }
+    .exercise-instruction { font-size: 11px; font-style: italic; color: var(--stone); margin-top: 2px; }
     .exercise-amount { font-size: 12px; color: var(--stone); white-space: nowrap; }
 
     .btn-primary {
@@ -791,7 +792,10 @@
           ${(exercises || []).map(ex => `
             <li class="exercise-row" data-id="${ex.id}">
               <div class="exercise-check">&#10003;</div>
-              <div class="exercise-text">${ex.exercise_name}</div>
+              <div style="flex:1;">
+                <div class="exercise-text">${ex.exercise_name}</div>
+                ${ex.instruction ? `<div class="exercise-instruction">${ex.instruction}</div>` : ''}
+              </div>
               <div class="exercise-amount">${amountText(ex)}</div>
             </li>
           `).join('')}
