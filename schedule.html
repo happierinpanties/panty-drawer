@@ -496,6 +496,10 @@
       margin-top: 4px;
     }
 
+    .peek-btn {
+      margin-top: 6px;
+    }
+
     .schedule-row.up-next {
       border-top: 3px solid var(--rose);
     }
@@ -833,8 +837,8 @@
         <div class="kpi-label">Total Scheduled</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-value" id="mostScheduledColor">--</div>
-        <div class="kpi-label">Most Scheduled Color</div>
+        <div class="kpi-value" id="earlyPantyPeeks">--</div>
+        <div class="kpi-label">Early Panty Peeks</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-value" id="longestScheduleStreak">--</div>
@@ -1322,13 +1326,24 @@ const mysteryIconSvg = `
               font-style="italic" font-weight="400" font-size="24" fill="var(--ivory)">?</text>
       </svg>`;
 
+    // The real thumb/name/notes are rendered too (just hidden), since the
+    // panty data is already in hand — a "peek" only ever toggles what's
+    // shown client-side and logs that it happened, it never re-fetches.
+    const realThumbHtml = `<div class="schedule-thumb"><img src="${panty.image_url || ''}" alt="${panty.name || ''}" loading="lazy" /></div>`;
+    const realNameHtml = panty.name || 'Unknown';
+    const realNotesHtml = row.notes ? `<div class="schedule-notes">${row.notes}</div>` : '';
+
     const thumbHtml = showMystery
-      ? `<div class="schedule-thumb schedule-thumb-mystery">${mysteryIconSvg}</div>`
-      : `<div class="schedule-thumb"><img src="${panty.image_url || ''}" alt="${panty.name || ''}" loading="lazy" /></div>`;
-const nameHtml = showMystery ? getMysteryText(row.id) : (panty.name || 'Unknown');
+      ? `<div class="schedule-thumb schedule-thumb-mystery peek-mystery">${mysteryIconSvg}</div>
+         <div class="peek-real" style="display:none;">${realThumbHtml}</div>`
+      : realThumbHtml;
+    const nameHtml = showMystery
+      ? `<div class="schedule-name peek-mystery">${getMysteryText(row.id)}</div>
+         <div class="schedule-name peek-real" style="display:none;">${realNameHtml}</div>`
+      : `<div class="schedule-name">${realNameHtml}</div>`;
     const notesHtml = showMystery
-      ? ''
-      : (row.notes ? `<div class="schedule-notes">${row.notes}</div>` : '');
+      ? `<div class="peek-real" style="display:none;">${realNotesHtml}</div>`
+      : realNotesHtml;
 
     let hiddenNoteHtml = '';
     if (isHidden && isOwn) {
@@ -1343,31 +1358,59 @@ const nameHtml = showMystery ? getMysteryText(row.id) : (panty.name || 'Unknown'
       countdownHtml = `<div class="schedule-countdown countdown-timer" data-hide-until="${row.hide_until}">${formatCountdownText(initialDiff)}</div>`;
     }
 
+    const peekBtnHtml = showMystery
+      ? `<button class="btn-link peek-btn" data-id="${row.id}">Peek</button>`
+      : '';
+
     return `
       <div class="schedule-row">
         ${thumbHtml}
         <div class="schedule-main">
           <div class="schedule-date">${dateStr}</div>
-          <div class="schedule-name">${nameHtml}</div>
+          ${nameHtml}
           ${notesHtml}
           ${hiddenNoteHtml}
           ${countdownHtml}
+          ${peekBtnHtml}
         </div>
         ${isOwn ? `<button class="delete-btn" data-id="${row.id}">Remove</button>` : ''}
       </div>`;
   }).join('');
 }
 document.getElementById('scheduleList').addEventListener('click', async (e) => {
-  const btn = e.target.closest('.delete-btn');
-  if (!btn) return;
-  const id = btn.dataset.id;
-  const { error } = await client.from('wear_schedule').delete().eq('id', id);
-  if (error) {
-    console.error('Delete error:', JSON.stringify(error));
-    alert('Could not remove this entry.');
+  const deleteBtn = e.target.closest('.delete-btn');
+  if (deleteBtn) {
+    const id = deleteBtn.dataset.id;
+    const { error } = await client.from('wear_schedule').delete().eq('id', id);
+    if (error) {
+      console.error('Delete error:', JSON.stringify(error));
+      alert('Could not remove this entry.');
+      return;
+    }
+    loadSchedule();
     return;
   }
-  loadSchedule();
+
+  const peekBtn = e.target.closest('.peek-btn');
+  if (peekBtn) {
+    const id = peekBtn.dataset.id;
+    const row = peekBtn.closest('.schedule-row');
+    row.querySelectorAll('.peek-mystery').forEach(el => el.style.display = 'none');
+    row.querySelectorAll('.peek-real').forEach(el => el.style.display = '');
+    peekBtn.remove();
+
+    // Log the peek. RLS only allows this while peeked_at is still null, so
+    // repeat peeks on the same entry (or a stale race) are harmless no-ops.
+    const { error } = await client
+      .from('wear_schedule')
+      .update({ peeked_at: new Date().toISOString() })
+      .eq('id', id)
+      .is('peeked_at', null);
+    if (error) {
+      console.error('Peek log error:', JSON.stringify(error));
+    }
+    return;
+  }
 });
 
 // ── Running pool ─────────────────────────────────────────────
@@ -1578,7 +1621,7 @@ async function loadScheduleKPIs() {
 
   const [scheduleRes, historyRes] = await Promise.all([
     client.from('wear_schedule')
-      .select('panty_id, schedule_date, panties ( color )')
+      .select('panty_id, schedule_date, peeked_at')
       .order('schedule_date', { ascending: true }),
     client.from('wear_history')
       .select('panty_id, worn_at'),
@@ -1615,14 +1658,9 @@ async function loadScheduleKPIs() {
   }
   document.getElementById('adherencePct').textContent = adherenceText;
 
-  // ── Most Scheduled Color (all-time, regardless of past/future) ──
-  const colorCounts = {};
-  allSchedule.forEach(row => {
-    const color = row.panties?.color;
-    if (color) colorCounts[color] = (colorCounts[color] || 0) + 1;
-  });
-  const topColor = Object.entries(colorCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '--';
-  document.getElementById('mostScheduledColor').textContent = topColor;
+  // ── Early Panty Peeks (all-time count of entries peeked before reveal) ──
+  const earlyPeeksCount = allSchedule.filter(row => !!row.peeked_at).length;
+  document.getElementById('earlyPantyPeeks').textContent = earlyPeeksCount;
 
   // ── Longest Streak of consecutive followed-through scheduled days ──
   // A day "counts" if it was scheduled AND actually worn as planned (adherence match).
