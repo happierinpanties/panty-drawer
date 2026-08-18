@@ -521,8 +521,8 @@
           <div class="kpi-label">Total Workouts</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-value" id="totalTime">--</div>
-          <div class="kpi-label">Total Time</div>
+          <div class="kpi-value" id="programProgress">--</div>
+          <div class="kpi-label">Program Progress</div>
         </div>
       </div>
     </div>
@@ -564,6 +564,7 @@
 
   let currentSession = null;
   let completedRows = [];      // { workout_day_id, completed_at, duration_minutes, notes, week_number, workout_number }
+  let programTotal = null;     // total workout_days seeded for the program
   let calendarCursor = new Date();
   calendarCursor.setDate(1);
 
@@ -680,6 +681,18 @@ c-185 578 -257 1086 -277 1960 -11 493 28 1044 97 1360 61 278 210 629 342
     document.getElementById('yogaApp').style.display = 'block';
 
     await loadHistory();
+
+    const { count, error: programTotalErr } = await client
+      .from('workout_days')
+      .select('id', { count: 'exact', head: true })
+      .eq('program_id', PROGRAM_ID);
+
+    if (programTotalErr) {
+      console.error('Program total load error:', JSON.stringify(programTotalErr));
+    } else {
+      programTotal = count;
+    }
+
     renderKpis();
     renderWeekProgress();
     await renderNextWorkout();
@@ -723,10 +736,10 @@ c-185 578 -257 1086 -277 1960 -11 493 28 1044 97 1360 61 278 210 629 342
   --------------------------- */
   function renderKpis() {
     const totalWorkouts = completedRows.length;
-    const totalMinutes = completedRows.reduce((sum, r) => sum + (r.duration_minutes || 0), 0);
     document.getElementById('totalWorkouts').textContent = totalWorkouts;
-    document.getElementById('totalTime').textContent =
-      totalMinutes >= 60 ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m` : `${totalMinutes}m`;
+
+    const pct = programTotal ? Math.round((totalWorkouts / programTotal) * 100) : null;
+    document.getElementById('programProgress').textContent = pct === null ? '--' : `${pct}%`;
 
     if (totalWorkouts === 0) {
       document.getElementById('currentStreak').textContent = '0';
