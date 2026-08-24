@@ -757,7 +757,8 @@
 
 .picker-badge-star { left: 5px; color: var(--rose); }
 .picker-badge-heart { right: 5px; color: var(--rose); }
-
+.picker-badge-scheduled { top: auto; bottom: 5px; left: 5px; }
+	  
     .picker-card img {
       width: 100%;
       height: 100%;
@@ -1084,6 +1085,7 @@ let allPanties = [];
 let selectedPantyId = null;
 let newestCreatedDate = null;
 let topTenIds = new Set();
+let reservedPantyIds = new Set();
 
 async function computeTopTenIds() {
   const [wearCountsRes, pantiesRes, wearHistoryRes] = await Promise.all([
@@ -1122,7 +1124,7 @@ async function computeTopTenIds() {
   return new Set(merged.slice(0, 10).map(p => String(p.id)));
 }  
 async function loadPantyPicker() {
-  const [pantiesRes, brandsRes, stylesRes, colorsRes, newestRes, topTenSet] = await Promise.all([
+  const [pantiesRes, brandsRes, stylesRes, colorsRes, newestRes, topTenSet, scheduledRes, poolRes] = await Promise.all([
     client.from('panties')
       .select('id, name, image_url, color, brand_id, style_id, created_at, brands(id,name), styles(id,name)')
       .eq('status', 'Clean')
@@ -1132,6 +1134,12 @@ async function loadPantyPicker() {
     client.from('panties').select('color').eq('status', 'Clean').order('color'),
     client.from('panties').select('created_at').order('created_at', { ascending: false }).limit(1),
     computeTopTenIds(),
+    client.from('wear_schedule')
+      .select('panty_id, schedule_date')
+      .gte('schedule_date', new Date().toISOString().split('T')[0]),
+    client.from('running_panty_pool')
+      .select('panty_id')
+      .is('run_date', null),
   ]);
 
   if (pantiesRes.error) {
@@ -1142,6 +1150,12 @@ async function loadPantyPicker() {
   allPanties = pantiesRes.data || [];
   newestCreatedDate = newestRes.data?.[0]?.created_at ? newestRes.data[0].created_at.slice(0, 10) : null;
   topTenIds = topTenSet;
+
+  // Build set of panty ids already reserved (scheduled ahead or in the running pool)
+  reservedPantyIds = new Set([
+    ...(scheduledRes.data || []).map(row => String(row.panty_id)),
+    ...(poolRes.data || []).map(row => String(row.panty_id)),
+  ]);
 
   // Populate filter dropdowns
   populatePickerFilter('pickerBrand', brandsRes.data || [], 'name', 'All Brands');
@@ -1196,6 +1210,7 @@ function renderPickerGrid() {
 grid.innerHTML = filtered.map(p => {
     const isNew = newestCreatedDate && p.created_at && p.created_at.slice(0, 10) === newestCreatedDate;
     const isTopTen = topTenIds.has(String(p.id));
+    const isReserved = reservedPantyIds.has(String(p.id));
 
     return `
     <div class="picker-card${p.id === selectedPantyId ? ' selected' : ''}"
@@ -1203,6 +1218,13 @@ grid.innerHTML = filtered.map(p => {
       <div class="picker-card-img">
         ${isNew ? '<span class="picker-badge picker-badge-star" title="Newly added">&#9733;</span>' : ''}
         ${isTopTen ? '<span class="picker-badge picker-badge-heart" title="Top 10 most worn">&#9829;</span>' : ''}
+        ${isReserved ? `<span class="picker-badge picker-badge-scheduled" title="Already scheduled or in the running pool">
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1" y="2" width="10" height="9" rx="1.5" stroke="#6b3a45" stroke-width="1.2"/>
+            <path d="M4 1v2M8 1v2" stroke="#6b3a45" stroke-width="1.2" stroke-linecap="round"/>
+            <path d="M1 5h10" stroke="#6b3a45" stroke-width="1.2"/>
+          </svg>
+        </span>` : ''}
         <img src="${p.image_url}" alt="${p.name}" loading="lazy" />
       </div>
       <div class="picker-card-name">${p.name}</div>
