@@ -524,10 +524,18 @@
         </div>
       </div>
 
-      <div class="form-group">
+           <div class="form-group">
         <label class="form-label" for="colorInput">Color <span class="optional">(optional)</span></label>
         <input type="text" id="colorInput" list="colorOptions" placeholder="e.g. Black" />
         <datalist id="colorOptions"></datalist>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="statusSelect">Status</label>
+        <select id="statusSelect">
+          <option value="Clean">Clean</option>
+          <option value="Dirty">Dirty</option>
+        </select>
       </div>
 
       <div class="form-group full">
@@ -813,6 +821,8 @@ document.getElementById('pantyForm').addEventListener('submit', async (e) => {
   const { data: publicUrlData } = client.storage.from(BUCKET).getPublicUrl(storagePath);
   const imageUrl = publicUrlData.publicUrl;
 
+  const status = document.getElementById('statusSelect').value;
+
   const { data, error } = await client.from('panties').insert({
     id: newId,
     name,
@@ -822,7 +832,7 @@ document.getElementById('pantyForm').addEventListener('submit', async (e) => {
     color: color || null,
     notes: notes || null,
     image_url: imageUrl,
-    status: 'Clean',
+    status,
   }).select('id');
 
   submitBtn.disabled = false;
