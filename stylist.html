@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panty Stylist</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+<script type="module" src="/js/nav-auth.js"></script>
+<script type="module" src="/js/auth-gate.js"></script>
+  <link rel="manifest" href="/manifest.json" />
+<link rel="apple-touch-icon" href="/icons/icon-180.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="The Drawer" />
+<meta name="theme-color" content="#c9847a" />
+
+  <style>
+    :root {
+      --blush:   #f5e8e4;
+      --rose:    #c9847a;
+      --plum:    #6b3a45;
+      --ivory:   #fdf8f6;
+      --stone:   #8a7570;
+      --ink:     #2e1f22;
+      --border:  #e8d8d3;
+      --card-bg: #ffffff;
+      --nav-h:   64px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--ivory);
+      color: var(--ink);
+      font-weight: 300;
+    }
+
+    /* ── Nav ─────────────────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(253,248,246,0.96);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      height: var(--nav-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+    }
+
+    .nav-wordmark {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      color: var(--plum);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      list-style: none;
+      position: relative;
+    }
+
+    .nav-links > li { position: relative; }
+
+    .nav-links > li > a,
+    .nav-links > li > button {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 16px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--stone);
+      text-decoration: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .nav-links > li > a:hover,
+    .nav-links > li > button:hover { color: var(--plum); }
+
+    .nav-links > li > a.active {
+      color: var(--plum);
+      border-bottom: 2px solid var(--rose);
+    }
+
+    .dropdown {
+      position: absolute;
+      top: calc(100% + 1px);
+      right: 0;
+      min-width: 180px;
+      background: var(--ivory);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--rose);
+      box-shadow: 0 8px 24px rgba(107,58,69,0.08);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-4px);
+      transition: opacity 0.18s, transform 0.18s;
+      list-style: none;
+    }
+
+    .nav-links > li:hover .dropdown,
+    .nav-links > li:focus-within .dropdown {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateY(0);
+    }
+
+    .dropdown li a {
+      display: block;
+      padding: 12px 20px;
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--stone);
+      text-decoration: none;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .dropdown li a:hover { background: var(--blush); color: var(--plum); }
+
+    .chevron { font-size: 9px; transition: transform 0.2s; }
+    .nav-links > li:hover .chevron { transform: rotate(180deg); }
+
+    /* Auth area in nav */
+    .auth-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: 8px;
+      padding-left: 16px;
+      border-left: 1px solid var(--border);
+    }
+
+    .auth-email {
+      font-size: 11px;
+      color: var(--stone);
+      letter-spacing: 0.04em;
+    }
+
+    .btn-text {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--rose);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px 10px;
+      transition: color 0.2s;
+    }
+
+    .btn-text:hover { color: var(--plum); }
+
+    /* ── Page Header ─────────────────────────────────────────── */
+    .page-header {
+      text-align: center;
+      padding: 56px 24px 40px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .page-header .eyebrow {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--rose);
+      margin-bottom: 14px;
+    }
+
+    .page-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(34px, 5vw, 52px);
+      font-weight: 400;
+      color: var(--plum);
+      line-height: 1.15;
+    }
+
+    .page-header h1 em { font-style: italic; }
+
+    /* ── Layout ──────────────────────────────────────────────── */
+    .content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 32px 80px;
+    }
+
+    .section { margin-top: 48px; }
+    .section:first-child { margin-top: 0; }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--plum);
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    /* ── Sign-in card (shown when logged out) ───────────────── */
+    .signin-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--rose);
+      padding: 40px;
+      text-align: center;
+      max-width: 420px;
+      margin: 0 auto;
+    }
+
+    .signin-card p {
+      font-size: 13px;
+      color: var(--stone);
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .signin-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    input[type="email"] {
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 11px 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      color: var(--ink);
+      background: var(--ivory);
+    }
+
+    input[type="email"]:focus {
+      outline: none;
+      border-color: var(--rose);
+    }
+
+    .btn-primary {
+      background: var(--plum);
+      color: #fff;
+      border: none;
+      border-radius: 2px;
+      padding: 12px 20px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover { background: var(--rose); }
+    .btn-primary:disabled { background: var(--border); cursor: default; }
+
+    .signin-status {
+      font-size: 12px;
+      color: var(--stone);
+      margin-top: 14px;
+      min-height: 16px;
+    }
+
+    .signin-status.success { color: var(--plum); }
+    .signin-status.error { color: #a33; }
+
+    .locked-note {
+      text-align: center;
+      font-size: 12px;
+      color: var(--stone);
+      margin-top: 16px;
+      font-style: italic;
+    }
+
+    .form-status {
+      font-size: 12px;
+      color: var(--stone);
+    }
+
+    .form-status.success { color: var(--plum); }
+    .form-status.error { color: #a33; }
+
+    /* ── Footer ──────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 32px;
+      text-align: center;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--stone);
+    }
+
+    /* ── Filters ─────────────────────────────────────────────── */
+    .filters-wrap {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 24px;
+    }
+
+    .filters-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 16px;
+      margin-bottom: 4px;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--stone);
+    }
+
+    .multi-select {
+      position: relative;
+      min-width: 180px;
+    }
+
+    .multi-select-toggle {
+      width: 100%;
+      appearance: none;
+      -webkit-appearance: none;
+      text-align: left;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 10px 32px 10px 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      color: var(--ink);
+      background: var(--ivory) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a7570'/%3E%3C/svg%3E") no-repeat right 14px center;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .multi-select-toggle:focus { outline: none; border-color: var(--rose); }
+    .multi-select.open .multi-select-toggle { border-color: var(--rose); }
+
+    .multi-select-panel {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      z-index: 50;
+      min-width: 220px;
+      max-height: 240px;
+      overflow-y: auto;
+      background: var(--ivory);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--rose);
+      box-shadow: 0 8px 24px rgba(107,58,69,0.08);
+      padding: 6px 0;
+      display: none;
+    }
+
+    .multi-select.open .multi-select-panel { display: block; }
+
+    .multi-select-option {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 14px;
+      font-size: 12px;
+      color: var(--ink);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .multi-select-option:hover { background: var(--blush); }
+
+    .multi-select-option input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      accent-color: var(--rose);
+      cursor: pointer;
+    }
+
+    .multi-select-empty {
+      padding: 10px 14px;
+      font-size: 11px;
+      color: var(--stone);
+      font-style: italic;
+    }
+
+    .filters-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    /* ── Recommendation grid ────────────────────────────────── */
+    .recommend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 18px;
+      margin-top: 24px;
+    }
+
+    .recommend-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .recommend-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(107,58,69,0.09);
+    }
+
+    .recommend-card-img {
+      aspect-ratio: 3/4;
+      overflow: hidden;
+      background: var(--blush);
+    }
+
+    .recommend-card-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .recommend-card-body {
+      padding: 14px 16px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .recommend-card-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 15px;
+      color: var(--plum);
+      line-height: 1.3;
+    }
+
+    .recommend-card-meta {
+      font-size: 11px;
+      color: var(--stone);
+      letter-spacing: 0.02em;
+      line-height: 1.5;
+    }
+
+    .recommend-card-meta strong {
+      color: var(--ink);
+      font-weight: 500;
+    }
+
+    .recommend-wear-btn {
+      margin-top: auto;
+      padding-top: 6px;
+    }
+
+    .recommend-worn-note {
+      font-size: 11px;
+      color: var(--plum);
+      font-style: italic;
+      margin-top: 4px;
+    }
+
+    .recommend-empty {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--stone);
+    }
+
+    .recommend-empty p {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 16px;
+    }
+
+    .picked-banner {
+      background: var(--blush);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--rose);
+      padding: 14px 18px;
+      font-size: 13px;
+      color: var(--ink);
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .picked-banner.show { display: block; }
+
+    .picked-banner strong { color: var(--plum); font-weight: 500; }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 700px) {
+      nav { padding: 0 16px; }
+      .content { padding: 24px 16px 60px; }
+      .auth-email { display: none; }
+      .multi-select { min-width: 140px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-wordmark" href="https://www.panty-drawer.com">The Drawer</a>
+  <ul class="nav-links">
+    <li><a href="https://www.panty-drawer.com">Drawer</a></li>
+    <li>
+      <button aria-haspopup="true">Pages <span class="chevron">&#9662;</span></button>
+      <ul class="dropdown">
+        <li><a href="/stats">Panty Stats</a></li>
+        <li><a href="/hamper">Hamper</a></li>
+        <li><a href="/retired">Retired Panties</a></li>
+        <li><a href="/chopping-block">Chopping Block</a></li>
+        <li data-auth="required"><a href="/schedule">Wear Schedule</a></li>
+        <li data-auth="required"><a href="/stylist" class="active">Panty Stylist</a></li>
+        <li data-auth="required"><a href="/mood">Mood</a></li>
+        <li data-auth="required"><a href="/yoga">Pantyboy Yoga</a></li>
+        <li data-auth="required"><a href="/add">Add Panty</a></li>
+      </ul>
+    </li>
+    <li class="auth-area" id="authArea"><!-- populated by nav-auth.js --></li>
+  </ul>
+</nav>
+
+<header class="page-header">
+  <p class="eyebrow">Let's Pick Something</p>
+  <h1>Panty <em>Stylist</em></h1>
+</header>
+
+<div class="content">
+
+  <!-- Signed-out state -->
+  <div class="section" id="signedOutSection" style="display:none;">
+    <div class="signin-card">
+      <p>Sign in to get today's recommendations.</p>
+      <form class="signin-form" id="signinForm">
+        <input type="email" id="signinEmail" placeholder="you@example.com" required />
+        <button type="submit" class="btn-primary">Send Sign-In Code</button>
+      </form>
+      <div class="signin-status" id="signinStatus"></div>
+    </div>
+  </div>
+
+  <!-- Signed-in state -->
+  <div id="signedInContent" style="display:none;">
+
+    <div class="section">
+      <div class="section-title">Narrow It Down <span style="text-transform:none; font-weight:400; font-size:12px; color:var(--stone);">(optional)</span></div>
+
+      <div class="filters-wrap">
+        <div class="filters-row">
+          <div class="filter-group">
+            <label class="form-label">Colors</label>
+            <div class="multi-select" id="colorFilter">
+              <button type="button" class="multi-select-toggle" id="colorFilterToggle">Any Color</button>
+              <div class="multi-select-panel" id="colorFilterPanel"></div>
+            </div>
+          </div>
+          <div class="filter-group">
+            <label class="form-label">Styles</label>
+            <div class="multi-select" id="styleFilter">
+              <button type="button" class="multi-select-toggle" id="styleFilterToggle">Any Style</button>
+              <div class="multi-select-panel" id="styleFilterPanel"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="filters-actions">
+          <button type="button" class="btn-primary" id="generateBtn">Suggest a Few</button>
+          <span class="form-status" id="generateStatus"></span>
+        </div>
+      </div>
+      <div class="locked-note" id="notAllowedNote" style="display:none;">
+        You're signed in, but this account isn't on the approved list yet.
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Today's Picks</div>
+      <div class="picked-banner" id="pickedBanner"></div>
+      <div class="recommend-grid" id="recommendGrid">
+        <div class="recommend-empty">
+          <p>Set any filters you'd like, then ask for a few options.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<footer>
+  &copy; The Drawer &nbsp;&middot;&nbsp; Panty Stylist
+</footer>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const client = createClient(
+  'https://rkocfrsaeeyxgfdxeiqz.supabase.co',
+  'sb_publishable_yp7myP1S5wmYLQrgwNWxhg_IfZHdeZj'
+);
+
+let currentSession = null;
+
+// ── Local date helper (timezone-correct, matches index.html) ──
+function getLocalDateString() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+// ── Auth UI rendering ─────────────────────────────────────────
+function renderAuthArea() {
+  const area = document.getElementById('authArea');
+  if (currentSession) {
+    area.innerHTML = `
+      <span class="auth-email">${currentSession.user.email}</span>
+      <button class="btn-text" id="signOutBtn">Sign Out</button>
+    `;
+    document.getElementById('signOutBtn').addEventListener('click', signOut);
+  } else {
+    area.innerHTML = `<a href="#" class="btn-text" id="navSignInLink">Sign In</a>`;
+    document.getElementById('navSignInLink').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('signedOutSection').scrollIntoView({ behavior: 'smooth' });
+    });
+  }
+}
+
+function renderPageState() {
+  document.getElementById('signedOutSection').style.display = currentSession ? 'none' : 'block';
+  document.getElementById('signedInContent').style.display = currentSession ? 'block' : 'none';
+}
+
+// ── Sign in / out ─────────────────────────────────────────────
+document.getElementById('signinForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('signinEmail').value.trim();
+  const statusEl = document.getElementById('signinStatus');
+  statusEl.textContent = 'Sending...';
+  statusEl.className = 'signin-status';
+
+  const { error } = await client.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href }
+  });
+
+  if (error) {
+    if (error.code === 'over_email_send_rate_limit' || error.status === 429) {
+      statusEl.textContent = 'Too many attempts right now — please try again in a bit.';
+    } else {
+      statusEl.textContent = 'Something went wrong. Please try again.';
+    }
+    statusEl.className = 'signin-status error';
+    console.error('Sign-in error:', JSON.stringify(error));
+  } else {
+    statusEl.textContent = 'Check your email for a sign-in code.';
+    statusEl.className = 'signin-status success';
+  }
+});
+
+async function signOut() {
+  await client.auth.signOut();
+  currentSession = null;
+  renderAuthArea();
+  renderPageState();
+}
+
+// ── Multi-select dropdown (colors / styles) ────────────────────
+const colorSelected = new Set();
+const styleSelected = new Set();
+
+function buildMultiSelect(panelId, toggleId, wrapId, options, selectedSet, emptyLabel, allLabel) {
+  const panel = document.getElementById(panelId);
+  const toggle = document.getElementById(toggleId);
+
+  if (options.length === 0) {
+    panel.innerHTML = `<div class="multi-select-empty">${emptyLabel}</div>`;
+    return;
+  }
+
+  panel.innerHTML = options.map(o => `
+    <label class="multi-select-option">
+      <input type="checkbox" value="${o.value}" ${selectedSet.has(o.value) ? 'checked' : ''} />
+      ${o.label}
+    </label>
+  `).join('');
+
+  panel.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (cb.checked) selectedSet.add(cb.value);
+      else selectedSet.delete(cb.value);
+      updateMultiSelectLabel(toggleId, selectedSet, allLabel);
+    });
+  });
+
+  updateMultiSelectLabel(toggleId, selectedSet, allLabel);
+}
+
+function updateMultiSelectLabel(toggleId, selectedSet, allLabel) {
+  const toggle = document.getElementById(toggleId);
+  toggle.textContent = selectedSet.size === 0
+    ? allLabel
+    : `${selectedSet.size} selected`;
+}
+
+document.querySelectorAll('.multi-select-toggle').forEach(toggle => {
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const wrap = toggle.closest('.multi-select');
+    const wasOpen = wrap.classList.contains('open');
+    document.querySelectorAll('.multi-select.open').forEach(el => el.classList.remove('open'));
+    if (!wasOpen) wrap.classList.add('open');
+  });
+});
+
+document.addEventListener('click', () => {
+  document.querySelectorAll('.multi-select.open').forEach(el => el.classList.remove('open'));
+});
+
+document.querySelectorAll('.multi-select-panel').forEach(panel => {
+  panel.addEventListener('click', (e) => e.stopPropagation());
+});
+
+// ── Loading candidate panties ───────────────────────────────────
+let availablePanties = [];
+
+async function loadStylistData() {
+  const todayStr = getLocalDateString();
+
+  const [pantiesRes, wearCountsRes, stylesRes, fabricsRes, scheduledRes, poolRes] = await Promise.all([
+    client.from('panties')
+      .select('id, name, image_url, color, style_id, fabric_id, status'),
+    client.from('panty_wear_counts').select('id, wears, last_worn'),
+    client.from('styles').select('id, name'),
+    client.from('fabrics').select('id, name'),
+    client.from('wear_schedule').select('panty_id').gte('schedule_date', todayStr),
+    client.from('running_panty_pool').select('panty_id').is('run_date', null),
+  ]);
+
+  if (pantiesRes.error) {
+    console.error('Stylist data load error:', JSON.stringify(pantiesRes.error));
+    return;
+  }
+
+  const styleMap = {};
+  (stylesRes.data || []).forEach(s => { styleMap[s.id] = s.name; });
+
+  const fabricMap = {};
+  (fabricsRes.data || []).forEach(f => { fabricMap[f.id] = f.name; });
+
+  const wearMap = {};
+  (wearCountsRes.data || []).forEach(w => { wearMap[w.id] = w; });
+
+  const reservedIds = new Set([
+    ...(scheduledRes.data || []).map(r => String(r.panty_id)),
+    ...(poolRes.data || []).map(r => String(r.panty_id)),
+  ]);
+
+  availablePanties = (pantiesRes.data || [])
+    .filter(p => p.status === 'Clean' && !reservedIds.has(String(p.id)))
+    .map(p => {
+      const wear = wearMap[p.id] || {};
+      return {
+        id: p.id,
+        name: p.name,
+        image_url: p.image_url,
+        color: p.color,
+        styleId: p.style_id,
+        styleName: styleMap[p.style_id] || null,
+        fabricName: fabricMap[p.fabric_id] || null,
+        wears: wear.wears || 0,
+        lastWorn: wear.last_worn || null,
+      };
+    });
+
+  // Build filter option lists from what's actually available today
+  const colorOptions = [...new Set(availablePanties.map(p => p.color).filter(Boolean))]
+    .sort()
+    .map(c => ({ value: c, label: c }));
+
+  const styleIdsPresent = new Set(availablePanties.map(p => String(p.styleId)).filter(v => v !== 'null'));
+  const styleOptions = (stylesRes.data || [])
+    .filter(s => styleIdsPresent.has(String(s.id)))
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(s => ({ value: String(s.id), label: s.name }));
+
+  buildMultiSelect('colorFilterPanel', 'colorFilterToggle', 'colorFilter', colorOptions, colorSelected, 'No colors available.', 'Any Color');
+  buildMultiSelect('styleFilterPanel', 'styleFilterToggle', 'styleFilter', styleOptions, styleSelected, 'No styles available.', 'Any Style');
+}
+
+// ── Recommendation algorithm ────────────────────────────────────
+// Recency-weighted random pick: items worn longer ago (or never worn)
+// get better odds, but selection stays genuinely random rather than
+// always surfacing the same "most overdue" items.
+function weightFor(p) {
+  if (!p.lastWorn) return 4;
+  const days = (Date.now() - new Date(p.lastWorn).getTime()) / 86400000;
+  return 1 + Math.min(days, 90) / 30; // roughly 1x (worn today) to 4x (90+ days / never)
+}
+
+function weightedSampleWithoutReplacement(items, count) {
+  const pool = items.map(p => ({ p, w: weightFor(p) }));
+  const picks = [];
+  while (picks.length < count && pool.length > 0) {
+    const total = pool.reduce((sum, x) => sum + x.w, 0);
+    let r = Math.random() * total;
+    let idx = 0;
+    for (; idx < pool.length; idx++) {
+      r -= pool[idx].w;
+      if (r <= 0) break;
+    }
+    idx = Math.min(idx, pool.length - 1);
+    picks.push(pool[idx].p);
+    pool.splice(idx, 1);
+  }
+  return picks;
+}
+
+function formatLastWorn(lastWorn) {
+  if (!lastWorn) return 'Never worn';
+  const days = Math.floor((Date.now() - new Date(lastWorn).getTime()) / 86400000);
+  if (days <= 0) return 'Worn today';
+  if (days === 1) return 'Worn yesterday';
+  return `Worn ${days} days ago`;
+}
+
+function renderRecommendations(picks) {
+  const grid = document.getElementById('recommendGrid');
+  document.getElementById('pickedBanner').classList.remove('show');
+
+  if (picks.length === 0) {
+    grid.innerHTML = `<div class="recommend-empty"><p>Nothing matches those filters right now.</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = picks.map(p => `
+    <div class="recommend-card" data-id="${p.id}">
+      <div class="recommend-card-img">
+        <img src="${p.image_url}" alt="${p.name}" loading="lazy" />
+      </div>
+      <div class="recommend-card-body">
+        <div class="recommend-card-name">${p.name}</div>
+        <div class="recommend-card-meta">
+          <strong>${p.color || 'Unknown color'}</strong>${p.styleName ? ` &middot; ${p.styleName}` : ''}${p.fabricName ? ` &middot; ${p.fabricName}` : ''}<br/>
+          ${formatLastWorn(p.lastWorn)}
+        </div>
+        <button type="button" class="btn-primary recommend-wear-btn" data-id="${p.id}" data-name="${p.name.replace(/"/g, '&quot;')}">Wear This</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+document.getElementById('generateBtn').addEventListener('click', () => {
+  const statusEl = document.getElementById('generateStatus');
+
+  const candidates = availablePanties.filter(p => {
+    if (colorSelected.size > 0 && !colorSelected.has(p.color)) return false;
+    if (styleSelected.size > 0 && !styleSelected.has(String(p.styleId))) return false;
+    return true;
+  });
+
+  if (candidates.length === 0) {
+    renderRecommendations([]);
+    statusEl.textContent = '';
+    return;
+  }
+
+  const count = Math.min(candidates.length, 3 + Math.floor(Math.random() * 3)); // 3-5
+  const picks = weightedSampleWithoutReplacement(candidates, count);
+  renderRecommendations(picks);
+  statusEl.textContent = '';
+});
+
+// ── Wear a recommendation ───────────────────────────────────────
+document.getElementById('recommendGrid').addEventListener('click', async (e) => {
+  const btn = e.target.closest('.recommend-wear-btn');
+  if (!btn || !currentSession) return;
+
+  const pantyId = btn.dataset.id;
+  const name = btn.dataset.name;
+
+  document.querySelectorAll('.recommend-wear-btn').forEach(b => b.disabled = true);
+  btn.textContent = 'Logging...';
+
+  const { error } = await client.rpc('wear_panty_by_id', {
+    p_id: pantyId,
+    p_worn_at: getLocalDateString()
+  });
+
+  if (error) {
+    console.error('Wear log error:', JSON.stringify(error));
+    document.querySelectorAll('.recommend-wear-btn').forEach(b => b.disabled = false);
+    btn.textContent = 'Wear This';
+    const banner = document.getElementById('pickedBanner');
+    banner.textContent = 'Could not log that wear — this account may not be approved yet.';
+    banner.classList.add('show');
+    return;
+  }
+
+  btn.textContent = 'Worn!';
+  const banner = document.getElementById('pickedBanner');
+  banner.innerHTML = `Enjoy — logged <strong>${name}</strong> as worn today.`;
+  banner.classList.add('show');
+});
+
+// ── Init ──────────────────────────────────────────────────────
+async function init() {
+  const { data: { session } } = await client.auth.getSession();
+  currentSession = session;
+  renderAuthArea();
+  renderPageState();
+
+  if (currentSession) {
+    loadStylistData();
+  }
+
+  client.auth.onAuthStateChange((_event, session) => {
+    const wasSignedIn = !!currentSession;
+    currentSession = session;
+    renderAuthArea();
+    renderPageState();
+    if (currentSession && !wasSignedIn) {
+      loadStylistData();
+    }
+  });
+}
+
+init();
+</script>
+</body>
+</html>
