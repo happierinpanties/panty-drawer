@@ -524,15 +524,24 @@
         </div>
       </div>
 
-           <div class="form-group">
-        <label class="form-label" for="colorInput">Color <span class="optional">(optional)</span></label>
-        <input type="text" id="colorInput" list="colorOptions" placeholder="e.g. Black" />
-        <datalist id="colorOptions"></datalist>
+<div class="form-group">
+        <label class="form-label" for="colorSelect">Color <span class="optional">(optional)</span></label>
+        <select id="colorSelect">
+          <option value="">No color</option>
+          <option value="__new__">+ Add new…</option>
+        </select>
+        <div class="new-value-row" id="colorNewRow">
+          <input type="text" id="colorNewInput" placeholder="New color name" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="shadeInput">Shade <span class="optional">(optional)</span></label>
+        <input type="text" id="shadeInput" placeholder="e.g. dusty rose, champagne" />
       </div>
 
       <div class="form-group">
         <label class="form-label" for="statusSelect">Status</label>
-        <select id="statusSelect">
           <option value="Clean">Clean</option>
           <option value="Dirty">Dirty</option>
         </select>
@@ -639,7 +648,7 @@ async function loadLookups() {
     client.from('brands').select('id, name').order('name'),
     client.from('styles').select('id, name').order('name'),
     client.from('fabrics').select('id, name').order('name'),
-    client.from('panties').select('color'),
+    client.from('colors').select('id, name').order('name'),
   ]);
 
   if (brandsRes.error) console.error('Brands error:', JSON.stringify(brandsRes.error));
@@ -650,10 +659,7 @@ async function loadLookups() {
   populateLookupSelect('brandSelect', brandsRes.data || [], 'No brand');
   populateLookupSelect('styleSelect', stylesRes.data || [], 'No style');
   populateLookupSelect('fabricSelect', fabricsRes.data || [], 'No fabric');
-
-  const colors = [...new Set((colorsRes.data || []).map(c => c.color))].filter(Boolean).sort();
-  const datalist = document.getElementById('colorOptions');
-  datalist.innerHTML = colors.map(c => `<option value="${c}"></option>`).join('');
+  populateLookupSelect('colorSelect', colorsRes.data || [], 'No color');
 }
 
 function populateLookupSelect(id, options, placeholder) {
@@ -667,6 +673,7 @@ function populateLookupSelect(id, options, placeholder) {
   { selectId: 'brandSelect', rowId: 'brandNewRow', inputId: 'brandNewInput' },
   { selectId: 'styleSelect', rowId: 'styleNewRow', inputId: 'styleNewInput' },
   { selectId: 'fabricSelect', rowId: 'fabricNewRow', inputId: 'fabricNewInput' },
+  { selectId: 'colorSelect', rowId: 'colorNewRow', inputId: 'colorNewInput' },
 ].forEach(({ selectId, rowId, inputId }) => {
   document.getElementById(selectId).addEventListener('change', (e) => {
     const row = document.getElementById(rowId);
@@ -769,7 +776,7 @@ document.getElementById('pantyForm').addEventListener('submit', async (e) => {
   const submitBtn = document.getElementById('submitBtn');
 
   const name = document.getElementById('nameInput').value.trim();
-  const color = document.getElementById('colorInput').value.trim();
+  const shade = document.getElementById('shadeInput').value.trim();
   const notes = document.getElementById('notesInput').value.trim();
 
   if (!name) {
@@ -788,13 +795,14 @@ document.getElementById('pantyForm').addEventListener('submit', async (e) => {
   statusEl.className = 'form-status';
 
   // Resolve/create lookup values
-  const [brandResult, styleResult, fabricResult] = await Promise.all([
+  const [brandResult, styleResult, fabricResult, colorResult] = await Promise.all([
     resolveLookupId('brands', 'brandSelect', 'brandNewInput'),
     resolveLookupId('styles', 'styleSelect', 'styleNewInput'),
     resolveLookupId('fabrics', 'fabricSelect', 'fabricNewInput'),
+    resolveLookupId('colors', 'colorSelect', 'colorNewInput'),
   ]);
 
-  const lookupError = brandResult.error || styleResult.error || fabricResult.error;
+  const lookupError = brandResult.error || styleResult.error || fabricResult.error || colorResult.error;
   if (lookupError) {
     submitBtn.disabled = false;
     statusEl.textContent = lookupError;
@@ -829,7 +837,8 @@ document.getElementById('pantyForm').addEventListener('submit', async (e) => {
     brand_id: brandResult.id,
     style_id: styleResult.id,
     fabric_id: fabricResult.id,
-    color: color || null,
+    color_id: colorResult.id,
+    color: shade || null,
     notes: notes || null,
     image_url: imageUrl,
     status,
@@ -855,6 +864,7 @@ document.getElementById('pantyForm').addEventListener('submit', async (e) => {
   document.getElementById('brandNewRow').classList.remove('visible');
   document.getElementById('styleNewRow').classList.remove('visible');
   document.getElementById('fabricNewRow').classList.remove('visible');
+  document.getElementById('colorNewRow').classList.remove('visible');
   resizedBlob = null;
   loadLookups();
   setTimeout(() => { statusEl.textContent = ''; }, 2500);
