@@ -743,7 +743,7 @@ async function loadFilters() {
     client.from('brands').select('id, name').order('name'),
     client.from('styles').select('id, name').order('name'),
     client.from('fabrics').select('id, name').order('name'),
-    client.from('panties').select('color').order('color'),
+    client.from('colors').select('id, name').order('name'),
   ]);
 
   if (brandsRes.error) console.error('Brands error:', JSON.stringify(brandsRes.error));
@@ -759,7 +759,7 @@ async function loadFilters() {
   populateSelect('brand', brands, 'name', 'All Brands');
   populateSelect('style', styles, 'name', 'All Styles');
   populateSelect('fabric', fabrics, 'name', 'All Fabrics');
-  populateColorSelect(colors);
+  populateSelect('color', colors, 'name', 'All Colors');
 }
 
 function populateSelect(id, options, labelField, placeholder) {
@@ -768,14 +768,6 @@ function populateSelect(id, options, labelField, placeholder) {
   options.forEach(opt => {
     el.innerHTML += `<option value="${opt.id}">${opt[labelField]}</option>`;
   });
-  el.addEventListener('change', loadPanties);
-}
-
-function populateColorSelect(colors) {
-  const el = document.getElementById('color');
-  const unique = [...new Set(colors.map(c => c.color))].filter(Boolean);
-  el.innerHTML = `<option value="">All Colors</option>`;
-  unique.forEach(c => { el.innerHTML += `<option value="${c}">${c}</option>`; });
   el.addEventListener('change', loadPanties);
 }
 
@@ -812,7 +804,7 @@ async function loadPanties() {
   if (brand)  query = query.eq('brand_id', brand);
   if (style)  query = query.eq('style_id', style);
   if (fabric) query = query.eq('fabric_id', fabric);
-  if (color)  query = query.eq('color', color);
+  if (color)  query = query.eq('color_id', color);
 
 const [pantiesResult, wearResult, scheduleResult, runningPoolResult] = await Promise.all([
   query,
