@@ -1187,12 +1187,12 @@ async function computeTopTenIds() {
 async function loadPantyPicker() {
   const [pantiesRes, brandsRes, stylesRes, colorsRes, newestRes, topTenSet, scheduledRes, poolRes] = await Promise.all([
     client.from('panties')
-      .select('id, name, image_url, color, brand_id, style_id, created_at, brands(id,name), styles(id,name)')
+      .select('id, name, image_url, color_id, brand_id, style_id, created_at, brands(id,name), styles(id,name)')
       .eq('status', 'Clean')
       .order('name'),
     client.from('brands').select('id, name').order('name'),
     client.from('styles').select('id, name').order('name'),
-    client.from('panties').select('color').eq('status', 'Clean').order('color'),
+    client.from('colors').select('id, name').order('name'),
     client.from('panties').select('created_at').order('created_at', { ascending: false }).limit(1),
     computeTopTenIds(),
     client.from('wear_schedule')
@@ -1221,7 +1221,7 @@ async function loadPantyPicker() {
   // Populate filter dropdowns
   populatePickerFilter('pickerBrand', brandsRes.data || [], 'name', 'All Brands');
   populatePickerFilter('pickerStyle', stylesRes.data || [], 'name', 'All Styles');
-  populatePickerColorFilter(colorsRes.data || []);
+  populatePickerFilter('pickerColor', colorsRes.data || [], 'name', 'All Colors');
 
   // Wire up filters & search
   ['pickerSearch', 'pickerColor', 'pickerStyle', 'pickerBrand'].forEach(id => {
@@ -1240,13 +1240,6 @@ function populatePickerFilter(id, options, labelField, placeholder) {
   });
 }
 
-function populatePickerColorFilter(colors) {
-  const el = document.getElementById('pickerColor');
-  const unique = [...new Set(colors.map(c => c.color))].filter(Boolean);
-  el.innerHTML = `<option value="">All Colors</option>`;
-  unique.forEach(c => { el.innerHTML += `<option value="${c}">${c}</option>`; });
-}
-
 function renderPickerGrid() {
   const search = document.getElementById('pickerSearch').value.toLowerCase().trim();
   const color  = document.getElementById('pickerColor').value;
@@ -1255,7 +1248,7 @@ function renderPickerGrid() {
 
   const filtered = allPanties.filter(p => {
     if (search && !p.name.toLowerCase().includes(search)) return false;
-    if (color  && p.color !== color) return false;
+    if (color  && String(p.color_id) !== color) return false;
     if (style  && String(p.style_id) !== style) return false;
     if (brand  && String(p.brand_id) !== brand) return false;
     return true;
