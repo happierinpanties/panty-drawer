@@ -759,12 +759,13 @@ let availablePanties = [];
 async function loadStylistData() {
   const todayStr = getLocalDateString();
 
-  const [pantiesRes, wearCountsRes, stylesRes, fabricsRes, scheduledRes, poolRes] = await Promise.all([
+  const [pantiesRes, wearCountsRes, stylesRes, fabricsRes, colorsRes, scheduledRes, poolRes] = await Promise.all([
     client.from('panties')
-      .select('id, name, image_url, color, style_id, fabric_id, status'),
+      .select('id, name, image_url, color_id, style_id, fabric_id, status'),
     client.from('panty_wear_counts').select('id, wears, last_worn'),
     client.from('styles').select('id, name'),
     client.from('fabrics').select('id, name'),
+    client.from('colors').select('id, name'),
     client.from('wear_schedule').select('panty_id').gte('schedule_date', todayStr),
     client.from('running_panty_pool').select('panty_id').is('run_date', null),
   ]);
@@ -776,9 +777,12 @@ async function loadStylistData() {
 
   const styleMap = {};
   (stylesRes.data || []).forEach(s => { styleMap[s.id] = s.name; });
-
+  
   const fabricMap = {};
   (fabricsRes.data || []).forEach(f => { fabricMap[f.id] = f.name; });
+
+  const colorMap = {};
+  (colorsRes.data || []).forEach(c => { colorMap[c.id] = c.name; });
 
   const wearMap = {};
   (wearCountsRes.data || []).forEach(w => { wearMap[w.id] = w; });
@@ -796,7 +800,8 @@ async function loadStylistData() {
         id: p.id,
         name: p.name,
         image_url: p.image_url,
-        color: p.color,
+        colorId: p.color_id,
+        colorName: colorMap[p.color_id] || null,
         styleId: p.style_id,
         styleName: styleMap[p.style_id] || null,
         fabricName: fabricMap[p.fabric_id] || null,
@@ -806,9 +811,11 @@ async function loadStylistData() {
     });
 
   // Build filter option lists from what's actually available today
-  const colorOptions = [...new Set(availablePanties.map(p => p.color).filter(Boolean))]
-    .sort()
-    .map(c => ({ value: c, label: c }));
+  const colorIdsPresent = new Set(availablePanties.map(p => String(p.colorId)).filter(v => v !== 'null'));
+  const colorOptions = (colorsRes.data || [])
+    .filter(c => colorIdsPresent.has(String(c.id)))
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(c => ({ value: String(c.id), label: c.name }));
 
   const styleIdsPresent = new Set(availablePanties.map(p => String(p.styleId)).filter(v => v !== 'null'));
   const styleOptions = (stylesRes.data || [])
@@ -873,7 +880,7 @@ function renderRecommendations(picks) {
       <div class="recommend-card-body">
         <div class="recommend-card-name">${p.name}</div>
         <div class="recommend-card-meta">
-          <strong>${p.color || 'Unknown color'}</strong>${p.styleName ? ` &middot; ${p.styleName}` : ''}${p.fabricName ? ` &middot; ${p.fabricName}` : ''}<br/>
+          <strong>${p.colorName || 'Unknown color'}</strong>${p.styleName ? ` &middot; ${p.styleName}` : ''}${p.fabricName ? ` &middot; ${p.fabricName}` : ''}<br/>
           ${formatLastWorn(p.lastWorn)}
         </div>
         <button type="button" class="btn-primary recommend-wear-btn" data-id="${p.id}" data-name="${p.name.replace(/"/g, '&quot;')}">Wear This</button>
@@ -886,7 +893,7 @@ document.getElementById('generateBtn').addEventListener('click', () => {
   const statusEl = document.getElementById('generateStatus');
 
   const candidates = availablePanties.filter(p => {
-    if (colorSelected.size > 0 && !colorSelected.has(p.color)) return false;
+    if (colorSelected.size > 0 && !colorSelected.has(String(p.colorId))) return false;
     if (styleSelected.size > 0 && !styleSelected.has(String(p.styleId))) return false;
     return true;
   });
