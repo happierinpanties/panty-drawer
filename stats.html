@@ -1032,7 +1032,7 @@ async function loadColorStats() {
       day_rating,
       wear_history (
         panties (
-          color
+          colors ( name )
         )
       )
     `);
@@ -1046,7 +1046,7 @@ async function loadColorStats() {
 
   data.forEach(row => {
     const rating = row.day_rating;
-    const color = row.wear_history?.panties?.color;
+    const color = row.wear_history?.panties?.colors?.name;
 
     if (!rating || !color) return;
 
@@ -1091,7 +1091,7 @@ async function loadDrawerCounts() {
   const { data, error } = await client
     .from('panties')
     .select(`
-      color,
+      colors ( name ),
       styles ( name ),
       brands ( name ),
       fabrics ( name )
@@ -1110,8 +1110,9 @@ async function loadDrawerCounts() {
 
   data.forEach(p => {
     // COLOR
-    if (p.color)
-      colorCounts[p.color] = (colorCounts[p.color] || 0) + 1;
+    const colorName = p.colors?.name;
+    if (colorName)
+      colorCounts[colorName] = (colorCounts[colorName] || 0) + 1;
 
     // STYLE
     if (Array.isArray(p.styles)) {
@@ -1167,7 +1168,7 @@ async function loadWearCounts() {
     .select(`
       worn_at,
       panties (
-        color,
+        colors ( name ),
         styles ( name ),
         brands ( name ),
         fabrics ( name )
@@ -1190,7 +1191,8 @@ async function loadWearCounts() {
     const p = row.panties;
     if (!p) return;
 
-    if (p.color) colorCounts[p.color] = (colorCounts[p.color] || 0) + 1;
+    const colorName = p.colors?.name;
+    if (colorName) colorCounts[colorName] = (colorCounts[colorName] || 0) + 1;
 // STYLE
 if (Array.isArray(p.styles)) {
   p.styles.forEach(s => {
@@ -1221,13 +1223,13 @@ if (Array.isArray(p.fabrics)) {
   fabricCounts[p.fabrics.name] = (fabricCounts[p.fabrics.name] || 0) + 1;
 }
 
-if (row.worn_at && p.color) {
+if (row.worn_at && colorName) {
   const date = new Date(row.worn_at);
   const yymm =
     String(date.getFullYear()).slice(2) +
     String(date.getMonth() + 1).padStart(2, '0');
 
-  const key = yymm + "-" + p.color;
+  const key = yymm + "-" + colorName;
   colorMonthCounts[key] = (colorMonthCounts[key] || 0) + 1;
 }
 
@@ -1291,7 +1293,7 @@ const { count: totalPanties } = await client
     .from('wear_history')
     .select(`
       panties (
-        color,
+        colors ( name ),
         styles ( name )
       )
     `);
@@ -1303,8 +1305,9 @@ const { count: totalPanties } = await client
     const p = row.panties;
     if (!p) return;
 
-    if (p.color)
-      colorCounts[p.color] = (colorCounts[p.color] || 0) + 1;
+    const colorName = p.colors?.name;
+    if (colorName)
+      colorCounts[colorName] = (colorCounts[colorName] || 0) + 1;
 
     if (Array.isArray(p.styles)) {
       p.styles.forEach(s => {
@@ -1334,7 +1337,7 @@ const { count: totalPanties } = await client
 async function loadDayOfWeekStats() {
   const { data, error } = await client
     .from('wear_history')
-    .select('worn_at, panties ( color, styles ( name ) )');
+    .select('worn_at, panties ( colors ( name ), styles ( name ) )');
 
   if (error) {
     console.error("Day-of-week stats error:", JSON.stringify(error));
@@ -1350,7 +1353,7 @@ async function loadDayOfWeekStats() {
     const dow = new Date(row.worn_at + 'T00:00:00').getDay();
     const dowLabel = dowNames[dow];
 
-    const color = row.panties?.color;
+    const color = row.panties?.colors?.name;
     if (color) {
       const key = dowLabel + '-' + color;
       colorCounts[key] = (colorCounts[key] || 0) + 1;
