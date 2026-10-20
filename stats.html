@@ -729,9 +729,9 @@ function daysAgoString(n) {
 }
 
 // Adds the selected range to any query that filters wear_history by worn_at
-function applyDateRange(query) {
-  if (dateRange.start) query = query.gte('worn_at', dateRange.start);
-  if (dateRange.end)   query = query.lte('worn_at', dateRange.end);
+function applyDateRange(query, column = 'worn_at') {
+  if (dateRange.start) query = query.gte(column, dateRange.start);
+  if (dateRange.end)   query = query.lte(column, dateRange.end);
   return query;
 }
 
@@ -739,6 +739,10 @@ function reloadDateAwareStats() {
   loadTopPanties();
   loadKPIs();
   loadWearCounts();
+  loadColorStats();
+  loadStateStats();
+  loadDayOfWeekStats();
+  loadStreaks();
 }
 
 document.getElementById('rangePresets').addEventListener('click', (e) => {
@@ -927,6 +931,9 @@ if (isColorChart) {
   const ctx = document
     .getElementById(canvasId)
     .getContext('2d');
+
+  const existingChart = Chart.getChart(canvasId);
+  if (existingChart) existingChart.destroy();
 
   new Chart(ctx,{
     type:'bar',
@@ -1209,17 +1216,21 @@ function renderSimpleBarChart(canvasId, counts) {
 --------------------------- */
 
 async function loadColorStats() {
-  const { data, error } = await client
-    .from('wear_mood')
-    .select(`
-      day_rating,
-      wear_history (
-        panties (
-          colors ( name )
+  const { data, error } = await applyDateRange(
+    client
+      .from('wear_mood')
+      .select(`
+        day_rating,
+        wear_history!inner (
+          worn_at,
+          panties (
+            colors ( name )
+          )
         )
-      )
-    `);
-
+      `),
+    'wear_history.worn_at'
+  );
+	
   if (error) {
     console.error("Color stats error:", error);
     return;
@@ -1245,10 +1256,18 @@ renderGroupedChart("colorRatingChart", counts);}
 --------------------------- */
 
 async function loadStateStats() {
-  const { data, error } = await client
-    .from('wear_mood')
-    .select('day_rating, state')
-    .not('state', 'is', null);
+  // Only force the join (and drop unlinked rows) when a range is actually set,
+  // so All Time keeps matching the old numbers exactly.
+  const hasRange = !!(dateRange.start || dateRange.end);
+  const { data, error } = await applyDateRange(
+    client
+      .from('wear_mood')
+      .select(hasRange
+        ? 'day_rating, state, wear_history!inner ( worn_at )'
+        : 'day_rating, state')
+      .not('state', 'is', null),
+    'wear_history.worn_at'
+  );
 
   if (error) {
     console.error("State stats error:", error);
@@ -1407,9 +1426,9 @@ if (Array.isArray(p.fabrics)) {
 } else if (p.fabrics?.name) {
   fabricCounts[p.fabrics.name] = (fabricCounts[p.fabrics.name] || 0) + 1;
 }
-
+	  
 if (row.worn_at && colorName) {
-  const date = new Date(row.worn_at);
+  const date = new Date(row.worn_at + 'T00:00:00');
   const yymm =
     String(date.getFullYear()).slice(2) +
     String(date.getMonth() + 1).padStart(2, '0');
@@ -1420,7 +1439,7 @@ if (row.worn_at && colorName) {
 
 // STYLE MONTH COUNTS
 if (row.worn_at) {
-  const date = new Date(row.worn_at);
+  const date = new Date(row.worn_at + 'T00:00:00');
   const yymm =
     String(date.getFullYear()).slice(2) +
     String(date.getMonth() + 1).padStart(2, '0');
@@ -1524,9 +1543,11 @@ const { count: totalPanties } = await client
 --------------------------- */
 
 async function loadDayOfWeekStats() {
-  const { data, error } = await client
-    .from('wear_history')
-    .select('worn_at, panties ( colors ( name ), styles ( name ) )');
+  const { data, error } = await applyDateRange(
+    client
+      .from('wear_history')
+      .select('worn_at, panties ( colors ( name ), styles ( name ) )')
+  );
 
   if (error) {
     console.error("Day-of-week stats error:", JSON.stringify(error));
@@ -1589,6 +1610,9 @@ function renderDowChart(canvasId, counts, dowNames, isColorChart) {
     };
   });
 
+  const existingChart = Chart.getChart(canvasId);
+  if (existingChart) existingChart.destroy();
+
   const ctx = document.getElementById(canvasId).getContext('2d');
   new Chart(ctx, {
     type: 'bar',
@@ -1609,10 +1633,12 @@ function renderDowChart(canvasId, counts, dowNames, isColorChart) {
 --------------------------- */
 
 async function loadStreaks() {
-  const { data, error } = await client
-    .from('wear_history')
-    .select('worn_at')
-    .order('worn_at', { ascending: true });
+  const { data, error } = await applyDateRange(
+    client
+      .from('wear_history')
+      .select('worn_at')
+      .order('worn_at', { ascending: true })
+  );
 
   if (error) {
     console.error("Streak stats error:", JSON.stringify(error));
@@ -1622,11 +1648,16 @@ async function loadStreaks() {
   // Distinct calendar days with at least one logged wear
   const uniqueDays = [...new Set(data.map(row => row.worn_at))].sort();
 
+  // "Current streak" only means something if the range runs through today
+  const rangeIncludesToday = !dateRange.end || dateRange.end >= formatLocalDate(new Date());
+
   if (uniqueDays.length === 0) {
-    document.getElementById('currentStreak').textContent = '0';
+    document.getElementById('currentStreak').textContent = rangeIncludesToday ? '0' : 'N/A';
     document.getElementById('longestStreak').textContent = '0';
+    document.getElementById('longestStreakRange').textContent = '';
     document.getElementById('totalDaysLogged').textContent = '0';
     document.getElementById('longestGap').textContent = '--';
+    document.getElementById('longestGapRange').textContent = '';
     return;
   }
 
@@ -1691,7 +1722,7 @@ async function loadStreaks() {
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
-  document.getElementById('currentStreak').textContent = currentStreak;
+  document.getElementById('currentStreak').textContent = rangeIncludesToday ? currentStreak : 'N/A';
   document.getElementById('longestStreak').textContent = longestStreak;
   document.getElementById('totalDaysLogged').textContent = uniqueDays.length;
   document.getElementById('longestGap').textContent = longestGap;
@@ -1711,11 +1742,7 @@ async function loadStreaks() {
    Initialize
 --------------------------- */
 reloadDateAwareStats();
-loadColorStats();
-loadStateStats();
 loadDrawerCounts();
-loadDayOfWeekStats();
-loadStreaks();
 </script>
 </body>
 </html>
