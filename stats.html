@@ -386,6 +386,95 @@
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: var(--ivory); }
 
+    /* ── Date range bar ──────────────────────────────────────── */
+    .range-bar {
+      background: var(--blush);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 32px;
+    }
+
+    .range-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px 16px;
+    }
+
+    .range-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--stone);
+      white-space: nowrap;
+    }
+
+    .range-presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .range-btn {
+      background: var(--ivory);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 8px 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--ink);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .range-btn:hover { border-color: var(--rose); }
+
+    .range-btn.active {
+      background: var(--plum);
+      border-color: var(--plum);
+      color: #fff;
+    }
+
+    .range-custom {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .range-custom input[type="date"] {
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 7px 10px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      color: var(--ink);
+      background: var(--ivory);
+    }
+
+    .range-custom input[type="date"]:focus {
+      outline: none;
+      border-color: var(--rose);
+    }
+
+    .range-to {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--stone);
+    }
+
+    .range-status {
+      font-size: 11px;
+      color: #a33;
+    }
+
+    @media (max-width: 700px) {
+      .range-bar { padding: 14px 16px; }
+    }
+
     /* ── Footer ──────────────────────────────────────────────── */
     footer {
       border-top: 1px solid var(--border);
@@ -436,6 +525,25 @@
   <p class="eyebrow">By the Numbers</p>
   <h1>Panty <em>Stats</em></h1>
 </header>
+
+<!-- Date slicer -->
+<div class="range-bar">
+  <div class="range-inner">
+    <span class="range-label">Date Range</span>
+    <div class="range-presets" id="rangePresets">
+      <button type="button" class="range-btn active" data-preset="all">All Time</button>
+      <button type="button" class="range-btn" data-preset="30">Last 30 Days</button>
+      <button type="button" class="range-btn" data-preset="90">Last 90 Days</button>
+      <button type="button" class="range-btn" data-preset="year">This Year</button>
+    </div>
+    <div class="range-custom">
+      <input type="date" id="rangeStart" aria-label="Start date" />
+      <span class="range-to">to</span>
+      <input type="date" id="rangeEnd" aria-label="End date" />
+    </div>
+    <span class="range-status" id="rangeStatus"></span>
+  </div>
+</div>
 
 <div class="content">
 
@@ -562,7 +670,7 @@
 
   <!-- Drawer Breakdown -->
   <div class="section">
-    <div class="section-title">Current Drawer</div>
+    <div class="section-title">Current Drawer <span style="font-family:'Inter',sans-serif; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--stone);">&middot; not affected by date range</span></div>
     <div class="chart-2col">
       <div class="chart-card">
         <h3>By Color</h3>
@@ -603,16 +711,83 @@ Chart.defaults.font.size = 11;
 Chart.defaults.color = "#8a7570";
 
 /* ---------------------------
+   Date range slicer
+--------------------------- */
+let dateRange = { start: null, end: null }; // 'YYYY-MM-DD' strings, null = unbounded
+
+function formatLocalDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function daysAgoString(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return formatLocalDate(d);
+}
+
+// Adds the selected range to any query that filters wear_history by worn_at
+function applyDateRange(query) {
+  if (dateRange.start) query = query.gte('worn_at', dateRange.start);
+  if (dateRange.end)   query = query.lte('worn_at', dateRange.end);
+  return query;
+}
+
+function reloadDateAwareStats() {
+  loadTopPanties();
+  loadKPIs();
+  loadWearCounts();
+}
+
+document.getElementById('rangePresets').addEventListener('click', (e) => {
+  const btn = e.target.closest('.range-btn');
+  if (!btn) return;
+
+  const today = formatLocalDate(new Date());
+  let start = null, end = null;
+
+  if (btn.dataset.preset === '30')   { start = daysAgoString(29); end = today; }
+  if (btn.dataset.preset === '90')   { start = daysAgoString(89); end = today; }
+  if (btn.dataset.preset === 'year') { start = `${new Date().getFullYear()}-01-01`; end = today; }
+
+  document.querySelectorAll('.range-btn').forEach(b => b.classList.toggle('active', b === btn));
+  document.getElementById('rangeStart').value = start || '';
+  document.getElementById('rangeEnd').value = end || '';
+  document.getElementById('rangeStatus').textContent = '';
+
+  dateRange = { start, end };
+  reloadDateAwareStats();
+});
+
+function onCustomRangeChange() {
+  const start = document.getElementById('rangeStart').value || null;
+  const end = document.getElementById('rangeEnd').value || null;
+  const statusEl = document.getElementById('rangeStatus');
+
+  if (start && end && start > end) {
+    statusEl.textContent = 'Start date must be on or before the end date.';
+    return;
+  }
+  statusEl.textContent = '';
+
+  // Highlight All Time if both are cleared, otherwise no preset is active
+  document.querySelectorAll('.range-btn').forEach(b => {
+    b.classList.toggle('active', !start && !end && b.dataset.preset === 'all');
+  });
+
+  dateRange = { start, end };
+  reloadDateAwareStats();
+}
+
+document.getElementById('rangeStart').addEventListener('change', onCustomRangeChange);
+document.getElementById('rangeEnd').addEventListener('change', onCustomRangeChange);
+
+/* ---------------------------
    Helper Render Functions
 --------------------------- */
 async function loadTopPanties() {
-
-  // Get wear counts
-  const { data: wearCounts } = await client
-    .from('panty_wear_counts')
-    .select('id, wears');
-
-  if (!wearCounts) return;
 
   // Get panties info (ALL statuses)
   const { data: panties } = await client
@@ -621,29 +796,32 @@ async function loadTopPanties() {
 
   if (!panties) return;
 
-  // Get last worn date per panty
-  const { data: wearHistory } = await client
-    .from('wear_history')
-    .select('panty_id, worn_at')
-    .order('worn_at', { ascending: false });
+  // Wear history within the selected range, newest first
+  const { data: wearHistory } = await applyDateRange(
+    client
+      .from('wear_history')
+      .select('panty_id, worn_at')
+      .order('worn_at', { ascending: false })
+  );
 
+  if (!wearHistory) return;
+
+  // Wear counts and last-worn date, both computed from the ranged history
+  const wearCountMap = {};
   const lastWornMap = {};
   wearHistory.forEach(row => {
+    wearCountMap[row.panty_id] = (wearCountMap[row.panty_id] || 0) + 1;
     if (!lastWornMap[row.panty_id]) {
       lastWornMap[row.panty_id] = row.worn_at;
     }
   });
 
   // Merge data
-  const merged = panties.map(p => {
-    const wear = wearCounts.find(w => w.id === p.id);
-
-    return {
-      ...p,
-      wears: wear?.wears || 0,
-      lastWorn: lastWornMap[p.id] || null
-    };
-  });
+  const merged = panties.map(p => ({
+    ...p,
+    wears: wearCountMap[p.id] || 0,
+    lastWorn: lastWornMap[p.id] || null
+  }));
 
   // Sort
   merged.sort((a, b) => {
@@ -655,10 +833,15 @@ async function loadTopPanties() {
     return dateB - dateA;
   });
 
-  const top10 = merged.slice(0, 10);
+  const top10 = merged.filter(p => p.wears > 0).slice(0, 10);
 
   const grid = document.getElementById('topPantiesGrid');
   grid.innerHTML = '';
+
+  if (top10.length === 0) {
+    grid.innerHTML = '<p style="color:var(--stone); font-style:italic;">No wears logged in this date range.</p>';
+    return;
+  }
 
   top10.forEach((p, index) => {
     grid.innerHTML += `
@@ -1163,17 +1346,19 @@ async function loadDrawerCounts() {
 --------------------------- */
 
 async function loadWearCounts() {
-  const { data, error } = await client
-    .from('wear_history')
-    .select(`
-      worn_at,
-      panties (
-        colors ( name ),
-        styles ( name ),
-        brands ( name ),
-        fabrics ( name )
-      )
-    `);
+  const { data, error } = await applyDateRange(
+    client
+      .from('wear_history')
+      .select(`
+        worn_at,
+        panties (
+          colors ( name ),
+          styles ( name ),
+          brands ( name ),
+          fabrics ( name )
+        )
+      `)
+  );
 
   if (error) {
     console.error("Wear count error:", error);
@@ -1281,22 +1466,26 @@ const { count: totalPanties } = await client
 
 
   /* TOTAL WEARS */
-  const { count: totalWears } = await client
-    .from('wear_history')
-    .select('*', { count: 'exact', head: true });
+  const { count: totalWears } = await applyDateRange(
+    client
+      .from('wear_history')
+      .select('*', { count: 'exact', head: true })
+  );
 
   document.getElementById('totalWears').textContent = totalWears ?? 0;
 
 
   /* TOP COLOR + STYLE */
-  const { data } = await client
-    .from('wear_history')
-    .select(`
-      panties (
-        colors ( name ),
-        styles ( name )
-      )
-    `);
+  const { data } = await applyDateRange(
+    client
+      .from('wear_history')
+      .select(`
+        panties (
+          colors ( name ),
+          styles ( name )
+        )
+      `)
+  );
 
   const colorCounts = {};
   const styleCounts = {};
@@ -1521,11 +1710,9 @@ async function loadStreaks() {
 /* ---------------------------
    Initialize
 --------------------------- */
-loadTopPanties();
-loadKPIs();
+reloadDateAwareStats();
 loadColorStats();
 loadStateStats();
-loadWearCounts();
 loadDrawerCounts();
 loadDayOfWeekStats();
 loadStreaks();
