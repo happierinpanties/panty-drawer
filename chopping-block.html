@@ -255,6 +255,19 @@ input[type="email"]:focus { outline: none; border-color: var(--rose); }
   min-width: 160px;
 }
 .filter-inner select:focus { outline: none; border-color: var(--rose); }
+.filter-inner select:disabled { opacity: 0.4; cursor: default; }
+
+/* Show-all toggle */
+.show-all-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  cursor: pointer;
+  user-select: none;
+}
+.show-all-toggle input { accent-color: var(--plum); width: 15px; height: 15px; cursor: pointer; }
+.filter-inner.show-all .filter-label:not(.show-all-toggle) { opacity: 0.4; }
 
 /* ── Result count ─────────────────────────────────────────── */
 .result-bar {
@@ -456,7 +469,7 @@ footer {
 
 <!-- ── Filters ──────────────────────────────────────────────── -->
 <div class="filter-bar">
-  <div class="filter-inner">
+  <div class="filter-inner" id="filterInner">
     <span class="filter-label">Owned longer than</span>
     <select id="ageFilter">
       <option value="30">1 Month</option>
@@ -470,6 +483,10 @@ footer {
       <option value="180" selected>6 Months</option>
       <option value="365">1 Year</option>
     </select>
+    <label class="filter-label show-all-toggle" id="showAllLabel" style="display:none;">
+      <input type="checkbox" id="showAllToggle" />
+      Show all active
+    </label>
   </div>
 </div>
 
@@ -514,6 +531,7 @@ let currentSession = null;
 let rawPanties = [];
 let rawWearMap = {}; // panty_id -> array of Date
 let candidates = [];
+let showAll = false; // "Show all active" bypasses the age/worn filters
 
 // ── Auth UI (mirrors cage.html) ─────────────────────────────────
 function renderAuthArea() {
@@ -535,6 +553,8 @@ function renderAuthArea() {
 
 function renderPageAuthState() {
   document.getElementById('signedOutSection').style.display = currentSession ? 'none' : 'block';
+  document.getElementById('showAllLabel').style.display = currentSession ? 'flex' : 'none';
+  if (!currentSession && showAll) setShowAll(false); // signed out → back to normal candidates
   renderGrid(); // re-render so retire buttons reflect auth state
 }
 
@@ -640,6 +660,7 @@ function applyFilters() {
     const daysSinceWorn = lastWorn ? (now - lastWorn) / MS_DAY : null;
     return { ...p, ageInDays, wears, lastWorn, daysSinceWorn };
   }).filter(c => {
+    if (showAll) return true; // show-all mode skips the age/worn filters
     if (c.ageInDays <= ageThreshold) return false;
     if (c.wears === 0) return true; // never worn always qualifies, matches original query
     return c.daysSinceWorn > wornThreshold;
@@ -662,10 +683,14 @@ function renderGrid() {
   const grid = document.getElementById('grid');
   const countDiv = document.getElementById('resultCount');
 
-  countDiv.innerText = `${candidates.length} on the chopping block`;
+  countDiv.innerText = showAll
+    ? `${candidates.length} active panties`
+    : `${candidates.length} on the chopping block`;
 
   if (candidates.length === 0) {
-    grid.innerHTML = '<div class="empty"><p>Nothing meets the criteria. Your drawer is fully justified.</p></div>';
+    grid.innerHTML = showAll
+      ? '<div class="empty"><p>No active panties found.</p></div>'
+      : '<div class="empty"><p>Nothing meets the criteria. Your drawer is fully justified.</p></div>';
     return;
   }
 
@@ -751,9 +776,21 @@ async function retirePanty(id, btn) {
     return;
   }
 
+  rawPanties = rawPanties.filter(p => p.id !== id); // so filter/toggle changes don't resurrect it
   candidates = candidates.filter(c => c.id !== id);
   renderGrid();
 }
+function setShowAll(on) {
+  showAll = on;
+  document.getElementById('showAllToggle').checked = on;
+  document.getElementById('filterInner').classList.toggle('show-all', on);
+  document.getElementById('ageFilter').disabled = on;
+  document.getElementById('wornFilter').disabled = on;
+  applyFilters();
+}
+document.getElementById('showAllToggle').addEventListener('change', e => setShowAll(e.target.checked));
+document.getElementById('showAllToggle').checked = false; // browsers can restore form state on reload
+
 document.getElementById('ageFilter').addEventListener('change', applyFilters);
 document.getElementById('wornFilter').addEventListener('change', applyFilters); 
   
